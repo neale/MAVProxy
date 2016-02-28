@@ -4,10 +4,10 @@ from pymavlink import mavutil
 from MAVProxy.modules.lib import mp_module
 from MAVProxy.modules.lib.mp_settings import MPSetting
 
-class AutopilotModule(mp_module.MPModule):
+class Apmodule(mp_module.MPModule):
 
     def __init__(self, mpstate):
-        super(AutopilotModule, self).__init__(mpstate, "ap", "autopilot", public = True)
+        super(ApModule, self).__init__(mpstate, "ap", "autopilot", public = True)
         self.override = [ 0 ] * 16
         self.last_override = [ 0 ] * 16
         self.override_counter = 0
@@ -30,7 +30,7 @@ class AutopilotModule(mp_module.MPModule):
                 self.override != self.last_override or
                 self.override_counter > 0):
                 self.last_override = self.override[:]
-                update_motors()
+                send_rc_override()
                 if self.override_counter > 0:
                     self.override_counter -= 1
 
@@ -125,7 +125,7 @@ class AutopilotModule(mp_module.MPModule):
                                                            self.target_component,
                                                            *chan8)
 
-    def cmd_ap(self):
+    def cmd_ap(self, args):
         if self.waiting_for_command:
             set_mode('ALT_HOLD')
         else:
@@ -133,7 +133,7 @@ class AutopilotModule(mp_module.MPModule):
 
 def init(mpstate):
     '''initialise module'''
-    return AutopilotModule(mpstate)
+    return ApModule(mpstate)
 
 
         

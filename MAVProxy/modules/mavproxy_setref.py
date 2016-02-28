@@ -18,7 +18,7 @@ class SetRefModule(mp_module.MPModule):
         else:
             self.override_period = mavutil.periodic_event(1)
 
-    def cmd_ref(self):
+    def cmd_ref(self, args):
         print("Setting reference IMU points")
         ''' checks for existance of imu data'''
         if 'RAW_IMU' in self.status_msgs:
