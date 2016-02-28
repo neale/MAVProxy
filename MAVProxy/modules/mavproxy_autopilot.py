@@ -57,7 +57,7 @@ class Autopilotmodule(mp_module.MPModule):
     
     def refresh_imu_data(self):
         ''' checks for existance of imu data'''
-        if 'RAW_IMU' in self.status.status_msgs:
+        if 'RAW_IMU' in self.status.status.msgs:
             self.imu_raw = self.status.msgs['RAW_IMU']
             self.time_usec_raw = imu_raw.time_usec
             self.xgyro_raw = imu_raw.xgyro
