@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{d10fe833-9463-4b05-bdf8-6a701d84c415}</ProjectGuid>
     <ProjectHome>..\</ProjectHome>
-    <StartupFile>setup.py</StartupFile>
+    <StartupFile>MAVProxy\mavproxy.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -63,6 +63,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="MAVProxy\mavproxy.py" />
+    <Compile Include="MAVProxy\modules\mavproxy_autopilot.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="MAVProxy\modules\lib\ANUGA\geo_reference.py" />
     <Compile Include="MAVProxy\modules\lib\ANUGA\lat_long_UTM_conversion.py" />
     <Compile Include="MAVProxy\modules\lib\ANUGA\redfearn.py" />
