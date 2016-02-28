@@ -7,7 +7,7 @@ from MAVProxy.modules.lib.mp_settings import MPSetting
 class RefModule(mp_module.MPModule):
 
     def __init__(self, mpstate):
-        super(SetRef, self).__init__(mpstate, "ref", "Sets IMU 0 reference point", public = True)
+        super(RefModule, self).__init__(mpstate, "ref", "Sets IMU 0 reference point", public = True)
         self.override = [ 0 ] * 16
         self.last_override = [ 0 ] * 16
         self.override_counter = 0

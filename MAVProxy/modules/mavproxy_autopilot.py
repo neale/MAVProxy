@@ -7,7 +7,7 @@ from MAVProxy.modules.lib.mp_settings import MPSetting
 class AutopilotModule(mp_module.MPModule):
 
     def __init__(self, mpstate):
-        super(Autopilot, self).__init__(mpstate, "ap", "autopilot", public = True)
+        super(AutopilotModule, self).__init__(mpstate, "ap", "autopilot", public = True)
         self.override = [ 0 ] * 16
         self.last_override = [ 0 ] * 16
         self.override_counter = 0
