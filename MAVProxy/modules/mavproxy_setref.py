@@ -2,7 +2,8 @@
 import time, os, struct, math
 from pymavlink import mavutil
 from MAVProxy.modules.lib import mp_module
-from MAVProxy.modules.lib.mp_settings import MPSetting
+from MAVProxy.modules.lib.mp_settings import MPSettings, MPSetting
+
 
 class SetRefModule(mp_module.MPModule):
 
@@ -19,6 +20,7 @@ class SetRefModule(mp_module.MPModule):
             self.override_period = mavutil.periodic_event(1)
 
     def cmd_ref(self, args):
+        print("Status: ", self.status())
         print("Setting reference IMU points")
         ''' checks for existance of imu data'''
         if 'RAW_IMU' in self.status_msgs:

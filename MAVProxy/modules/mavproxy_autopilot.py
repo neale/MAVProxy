@@ -4,21 +4,21 @@ from pymavlink import mavutil
 from MAVProxy.modules.lib import mp_module
 from MAVProxy.modules.lib.mp_settings import MPSetting
 
-class Apmodule(mp_module.MPModule):
+class Autopilotmodule(mp_module.MPModule):
 
     def __init__(self, mpstate):
-        super(ApModule, self).__init__(mpstate, "ap", "autopilot", public = True)
+        super(Autopilotmodule, self).__init__(mpstate, "autopilot", "autopilot command ", public = True)
         self.override = [ 0 ] * 16
         self.last_override = [ 0 ] * 16
         self.override_counter = 0
         self.check_imu_counter = 0
-        self.add_command('ap', self.cmd_ap, "Autopilot input control", ['< Magnitude, Angle >'])
+        self.add_command('autopilot', self.cmd_ap, "Autopilot input control", ['< Magnitude, Angle >'])
         self.waiting_for_command = True
         if self.sitl_output:
             self.override_period = mavutil.periodic_event(20)
         else:
             self.override_period = mavutil.periodic_event(1)
-
+        
     def idle_task(self):
 
         refresh_imu_data()
@@ -54,10 +54,10 @@ class Apmodule(mp_module.MPModule):
             modenum = mode_mapping[mode]
         self.master.set_mode(modenum)
 
-  
+    
     def refresh_imu_data(self):
         ''' checks for existance of imu data'''
-        if 'RAW_IMU' in self.status_msgs:
+        if 'RAW_IMU' in self.status.status_msgs:
             self.imu_raw = self.status.msgs['RAW_IMU']
             self.time_usec_raw = imu_raw.time_usec
             self.xgyro_raw = imu_raw.xgyro
@@ -133,7 +133,7 @@ class Apmodule(mp_module.MPModule):
 
 def init(mpstate):
     '''initialise module'''
-    return ApModule(mpstate)
+    return Autopilotmodule(mpstate)
 
 
         
