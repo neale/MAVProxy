@@ -4,14 +4,14 @@ from pymavlink import mavutil
 from MAVProxy.modules.lib import mp_module
 from MAVProxy.modules.lib.mp_settings import MPSetting
 
-class RefModule(mp_module.MPModule):
+class SetRefModule(mp_module.MPModule):
 
     def __init__(self, mpstate):
-        super(RefModule, self).__init__(mpstate, "ref", "Sets IMU 0 reference point", public = True)
+        super(SetRefModule, self).__init__(mpstate, "setref", "Sets IMU 0 reference point", public = True)
         self.override = [ 0 ] * 16
         self.last_override = [ 0 ] * 16
         self.override_counter = 0
-        self.add_command('ref', self.cmd_ref, "Set IMU reference point", [''])
+        self.add_command('setref', self.cmd_ref, "Set IMU reference point", [''])
         self.waiting_for_command = True
         if self.sitl_output:
             self.override_period = mavutil.periodic_event(20)
@@ -59,7 +59,7 @@ class RefModule(mp_module.MPModule):
 
 def init(mpstate):
     '''initialise module'''
-    return RefModule(mpstate)
+    return SetRefModule(mpstate)
 
 
         

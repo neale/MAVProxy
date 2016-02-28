@@ -11,6 +11,7 @@ class AutopilotModule(mp_module.MPModule):
         self.override = [ 0 ] * 16
         self.last_override = [ 0 ] * 16
         self.override_counter = 0
+        self.check_imu_counter = 0
         self.add_command('ap', self.cmd_ap, "Autopilot input control", ['< Magnitude, Angle >'])
         self.waiting_for_command = True
         if self.sitl_output:
@@ -19,7 +20,11 @@ class AutopilotModule(mp_module.MPModule):
             self.override_period = mavutil.periodic_event(1)
 
     def idle_task(self):
+
         refresh_imu_data()
+        check_iu_counter += 1
+        if check_imu_counter % 100 is 0:
+            print("check_imu_counter:", check_imu_counter)
         if self.override_period.trigger():
             if (self.override != [ 0 ] * 16 or
                 self.override != self.last_override or
@@ -120,7 +125,7 @@ class AutopilotModule(mp_module.MPModule):
                                                            self.target_component,
                                                            *chan8)
 
-    def auto(self):
+    def cmd_ap(self):
         if self.waiting_for_command:
             set_mode('ALT_HOLD')
         else:
