@@ -1,5 +1,5 @@
 
-import time, os, struct, math
+import time, os, struct, math, socket
 from pymavlink import mavutil
 from MAVProxy.modules.lib import mp_module
 from MAVProxy.modules.lib.mp_settings import MPSetting
