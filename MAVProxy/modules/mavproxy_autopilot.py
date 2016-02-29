@@ -107,9 +107,9 @@ class Autopilotmodule(mp_module.MPModule):
             self.yacc_scaled  = self.imu_scaled.yacc
             self.zacc_scaled  = self.imu_scaled.zacc
 
-        self.AHRSUpdate(self.xgyro_raw, self.ygyro_raw, self.zgyro_raw,
+        """self.AHRSUpdate(self.xgyro_raw, self.ygyro_raw, self.zgyro_raw,
                         self.xacc_raw, self.yacc_raw, self.zacc_raw,
-                        self.xmag_raw, self.ymag_raw, self.zmag_raw)
+                        self.xmag_raw, self.ymag_raw, self.zmag_raw)"""
          
 
     def print_imu(self, args):
