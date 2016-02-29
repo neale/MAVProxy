@@ -26,7 +26,7 @@ class Autopilotmodule(mp_module.MPModule):
         self.q2 = 0.0 
         self.q3 = 0.0	# quaternion of sensor frame relative to auxiliary frame
         self.port = 0
-        self.s0, self.s1, self.s2, self.s3 = 0
+        self.s0, self.s1, self.s2, self.s3
         self.qDot1, self.qDot2, self.qDot3, self.qDot4
         self.hx, self.hy
         self._2q0mx, self._2q0my, self._2q0mz, self._2q1mx, self._2bx, self._2bz, self._4bx, self._4bz, self._2q0, self._2q1, self._2q2, self._2q3, self._2q0q2, self._2q2q3, self.q0q0, self.q0q1, self.q0q2, self.q0q3, self.q1q1, self.q1q2, self.q1q3, self.q2q2, self.q2q3, self.q3q3;
