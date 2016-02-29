@@ -36,7 +36,7 @@ class SetRefModule(mp_module.MPModule):
             self.yacc_raw_ref  = self.imu_raw_ref.yacc
             self.zacc_raw_ref  = self.imu_raw_ref.zacc
         if 'SCALED_IMU2' in self.status.msgs:
-            imu_scaled = self.status.msgs['SCALED_IMU2']
+            self.imu_scaled = self.status.msgs['SCALED_IMU2']
             self.time_boot_ms_ref = self.imu_scaled.time_boot_ms
             self.xgyro_scaled_ref = self.imu_scaled.xgyro
             self.ygyro_scaled_ref = self.imu_scaled.ygyro
