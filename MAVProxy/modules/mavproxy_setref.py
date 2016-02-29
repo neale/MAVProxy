@@ -13,6 +13,7 @@ class SetRefModule(mp_module.MPModule):
         self.last_override = [ 0 ] * 16
         self.override_counter = 0
         self.add_command('setref', self.cmd_ref, "Set IMU reference point", [''])
+        self.add_command('print_ref', self.print_ref, "print IMU reference point", [''])
         self.waiting_for_command = True
         if self.sitl_output:
             self.override_period = mavutil.periodic_event(20)
@@ -48,6 +49,7 @@ class SetRefModule(mp_module.MPModule):
             self.yacc_scaled_ref  = self.imu_scaled.yacc
             self.zacc_scaled_ref  = self.imu_scaled.zacc
 
+    def print_ref(self):
         print( "xgyro:", self.xgyro_scaled_ref,'\n',
             "ygyro:", self.ygyro_scaled_ref,'\n',
             "zg yro:", self.zgyro_scaled_ref,'\n',

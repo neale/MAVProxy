@@ -13,6 +13,8 @@ class Autopilotmodule(mp_module.MPModule):
         self.override_counter = 0
         self.check_imu_counter = 0
         self.add_command('autopilot', self.cmd_ap, "Autopilot input control", ['< Magnitude, Angle >'])
+        self.add_command('current_imu', self.print_imu, "prints out current IMU data", [ '' ])
+
         self.waiting_for_command = True
         if self.sitl_output:
             self.override_period = mavutil.periodic_event(20)
@@ -22,9 +24,9 @@ class Autopilotmodule(mp_module.MPModule):
     def idle_task(self):
 
         self.refresh_imu_data()
-        self.check_imu_counter += 1
-        if self.check_imu_counter % 100 is 0:
-            print("check_imu_counter:", self.check_imu_counter)
+        #self.check_imu_counter += 1
+        #if self.check_imu_counter % 100 is 0:
+            #print("check_imu_counter:", self.check_imu_counter)
         if self.override_period.trigger():
             if (self.override != [ 0 ] * 16 or
                 self.override != self.last_override or
@@ -81,6 +83,28 @@ class Autopilotmodule(mp_module.MPModule):
             self.xacc_scaled  = self.imu_scaled.xacc
             self.yacc_scaled  = self.imu_scaled.yacc
             self.zacc_scaled  = self.imu_scaled.zacc
+
+    def print_imu(self):
+        print (
+            self.xgyro_raw,
+            self.ygyro_raw,
+            self.zgyro_raw,
+            self.xmag_raw,
+            self.ymag_raw,
+            self.zmag_raw,
+            self.xacc_raw,
+            self.yacc_raw,
+            self.zacc_raw,
+            self.time_boot_ms,
+            self.xgyro_scaled,
+            self.ygyro_scaled,
+            self.zgyro_scaled,
+            self.xmag_scaled,
+            self.ymag_scaled,
+            self.zmag_scaled,
+            self.xacc_scaled,
+            self.yacc_scaled,
+            self.zacc_scaled)
 
     def calculate_channels(self, magnitude, angle):
         pass
