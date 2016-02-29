@@ -21,7 +21,7 @@ class Autopilotmodule(mp_module.MPModule):
         
     def idle_task(self):
 
-        refresh_imu_data()
+        self.refresh_imu_data()
         check_iu_counter += 1
         if check_imu_counter % 100 is 0:
             print("check_imu_counter:", check_imu_counter)
@@ -30,7 +30,7 @@ class Autopilotmodule(mp_module.MPModule):
                 self.override != self.last_override or
                 self.override_counter > 0):
                 self.last_override = self.override[:]
-                send_rc_override()
+                self.send_rc_override()
                 if self.override_counter > 0:
                     self.override_counter -= 1
 

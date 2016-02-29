@@ -26,15 +26,15 @@ class SetRefModule(mp_module.MPModule):
         if 'RAW_IMU' in self.status.msgs:
             self.imu_raw_ref = self.status.msgs['RAW_IMU']
             self.time_usec_raw_ref = imu_raw.time_usec
-            self.xgyro_raw_ref = imu_raw.xgyro
-            self.ygyro_raw_ref = imu_raw.ygyro
-            self.zgyro_raw_ref = imu_raw.zgyro
-            self.xmag_raw_ref  = imu_raw.xmag
-            self.ymag_raw_ref  = imu_raw.ymag
-            self.zmag_raw_ref  = imu_raw.zmag
-            self.xacc_raw_ref  = imu_raw.xacc
-            self.yacc_raw_ref  = imu_raw.yacc
-            self.zacc_raw_ref  = imu_raw.zacc
+            self.xgyro_raw_ref = imu_raw_ref.xgyro
+            self.ygyro_raw_ref = imu_raw_ref.ygyro
+            self.zgyro_raw_ref = imu_raw_ref.zgyro
+            self.xmag_raw_ref  = imu_raw_ref.xmag
+            self.ymag_raw_ref  = imu_raw_ref.ymag
+            self.zmag_raw_ref  = imu_raw_ref.zmag
+            self.xacc_raw_ref  = imu_raw_ref.xacc
+            self.yacc_raw_ref  = imu_raw_ref.yacc
+            self.zacc_raw_ref  = imu_raw_ref.zacc
         if 'SCALED_IMU2' in self.status.msgs:
             imu_scaled = self.status.msgs['SCALED_IMU2']
             self.time_boot_ms_ref = imu_scaled.time_boot_ms
