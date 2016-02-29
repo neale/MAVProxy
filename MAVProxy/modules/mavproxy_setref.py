@@ -25,7 +25,7 @@ class SetRefModule(mp_module.MPModule):
         ''' checks for existance of imu data'''
         if 'RAW_IMU' in self.status.msgs:
             self.imu_raw_ref = self.status.msgs['RAW_IMU']
-            self.time_usec_raw_ref = imu_raw.time_usec
+            self.time_usec_raw_ref = imu_raw_ref.time_usec
             self.xgyro_raw_ref = imu_raw_ref.xgyro
             self.ygyro_raw_ref = imu_raw_ref.ygyro
             self.zgyro_raw_ref = imu_raw_ref.zgyro
