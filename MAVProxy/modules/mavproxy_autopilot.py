@@ -22,9 +22,9 @@ class Autopilotmodule(mp_module.MPModule):
     def idle_task(self):
 
         self.refresh_imu_data()
-        check_iu_counter += 1
-        if check_imu_counter % 100 is 0:
-            print("check_imu_counter:", check_imu_counter)
+        self.check_imu_counter += 1
+        if self.check_imu_counter % 100 is 0:
+            print("check_imu_counter:", self.check_imu_counter)
         if self.override_period.trigger():
             if (self.override != [ 0 ] * 16 or
                 self.override != self.last_override or
@@ -57,30 +57,30 @@ class Autopilotmodule(mp_module.MPModule):
     
     def refresh_imu_data(self):
         ''' checks for existance of imu data'''
-        if 'RAW_IMU' in self.status.status.msgs:
+        if 'RAW_IMU' in self.status.msgs:
             self.imu_raw = self.status.msgs['RAW_IMU']
-            self.time_usec_raw = imu_raw.time_usec
-            self.xgyro_raw = imu_raw.xgyro
-            self.ygyro_raw = imu_raw.ygyro
-            self.zgyro_raw = imu_raw.zgyro
-            self.xmag_raw  = imu_raw.xmag
-            self.ymag_raw  = imu_raw.ymag
-            self.zmag_raw  = imu_raw.zmag
-            self.xacc_raw  = imu_raw.xacc
-            self.yacc_raw  = imu_raw.yacc
-            self.zacc_raw  = imu_raw.zacc
+            self.time_usec_raw = self.imu_raw.time_usec
+            self.xgyro_raw = self.imu_raw.xgyro
+            self.ygyro_raw = self.imu_raw.ygyro
+            self.zgyro_raw = self.imu_raw.zgyro
+            self.xmag_raw  = self.imu_raw.xmag
+            self.ymag_raw  = self.imu_raw.ymag
+            self.zmag_raw  = self.imu_raw.zmag
+            self.xacc_raw  = self.imu_raw.xacc
+            self.yacc_raw  = self.imu_raw.yacc
+            self.zacc_raw  = self.imu_raw.zacc
         if 'SCALED_IMU2' in self.status.msgs:
-            imu_scaled = self.status.msgs['SCALED_IMU2']
-            self.time_boot_ms = imu_scaled.time_boot_ms
-            self.xgyro_scaled = imu_scaled.xgyro
-            self.ygyro_scaled = imu_scaled.ygyro
-            self.zgyro_scaled = imu_scaled.zgyro
-            self.xmag_scaled  = imu_scaled.xmag
-            self.ymag_scaled  = imu_scaled.ymag
-            self.zmag_scaled  = imu_scaled.zmag
-            self.xacc_scaled  = imu_scaled.xacc
-            self.yacc_scaled  = imu_scaled.yacc
-            self.zacc_scaled  = imu_scaled.zacc
+            self.imu_scaled = self.status.msgs['SCALED_IMU2']
+            self.time_boot_ms = self.imu_scaled.time_boot_ms
+            self.xgyro_scaled = self.imu_scaled.xgyro
+            self.ygyro_scaled = self.imu_scaled.ygyro
+            self.zgyro_scaled = self.imu_scaled.zgyro
+            self.xmag_scaled  = self.imu_scaled.xmag
+            self.ymag_scaled  = self.imu_scaled.ymag
+            self.zmag_scaled  = self.imu_scaled.zmag
+            self.xacc_scaled  = self.imu_scaled.xacc
+            self.yacc_scaled  = self.imu_scaled.yacc
+            self.zacc_scaled  = self.imu_scaled.zacc
 
     def calculate_channels(self, magnitude, angle):
         pass
@@ -129,7 +129,7 @@ class Autopilotmodule(mp_module.MPModule):
         if self.waiting_for_command:
             set_mode('ALT_HOLD')
         else:
-                set_mode("STABILIZED")
+            set_mode("STABILIZED")
 
 def init(mpstate):
     '''initialise module'''
