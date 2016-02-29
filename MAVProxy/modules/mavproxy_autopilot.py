@@ -178,13 +178,16 @@ class Autopilotmodule(mp_module.MPModule):
                                                            *chan8)
     
     def cmd_sock(self, args):
-        if len(args) > 1:
-            print("Usage: socket <portno>")
-            return
-        elif not args:
-            self.port = 9999
-        else:
+        if type(args) is int:
             self.port = args
+        else:
+            if len(args) > 1:
+                print("Usage: socket <portno>")
+                return
+            elif not args:
+                self.port = 9999
+            else:
+                self.port = args
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect(('localhost', self.port))
         time.sleep(0.2)
