@@ -190,6 +190,7 @@ class Autopilotmodule(mp_module.MPModule):
                 self.port = args
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect(('localhost', self.port))
+        print("connecting to socket:", self.port)
         time.sleep(0.2)
 
 
