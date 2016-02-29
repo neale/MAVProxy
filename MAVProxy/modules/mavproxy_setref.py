@@ -25,28 +25,28 @@ class SetRefModule(mp_module.MPModule):
         ''' checks for existance of imu data'''
         if 'RAW_IMU' in self.status.msgs:
             self.imu_raw_ref = self.status.msgs['RAW_IMU']
-            self.time_usec_raw_ref = imu_raw_ref.time_usec
-            self.xgyro_raw_ref = imu_raw_ref.xgyro
-            self.ygyro_raw_ref = imu_raw_ref.ygyro
-            self.zgyro_raw_ref = imu_raw_ref.zgyro
-            self.xmag_raw_ref  = imu_raw_ref.xmag
-            self.ymag_raw_ref  = imu_raw_ref.ymag
-            self.zmag_raw_ref  = imu_raw_ref.zmag
-            self.xacc_raw_ref  = imu_raw_ref.xacc
-            self.yacc_raw_ref  = imu_raw_ref.yacc
-            self.zacc_raw_ref  = imu_raw_ref.zacc
+            self.time_usec_raw_ref = self.imu_raw_ref.time_usec
+            self.xgyro_raw_ref = self.imu_raw_ref.xgyro
+            self.ygyro_raw_ref = self.imu_raw_ref.ygyro
+            self.zgyro_raw_ref = self.imu_raw_ref.zgyro
+            self.xmag_raw_ref  = self.imu_raw_ref.xmag
+            self.ymag_raw_ref  = self.imu_raw_ref.ymag
+            self.zmag_raw_ref  = self.imu_raw_ref.zmag
+            self.xacc_raw_ref  = self.imu_raw_ref.xacc
+            self.yacc_raw_ref  = self.imu_raw_ref.yacc
+            self.zacc_raw_ref  = self.imu_raw_ref.zacc
         if 'SCALED_IMU2' in self.status.msgs:
             imu_scaled = self.status.msgs['SCALED_IMU2']
-            self.time_boot_ms_ref = imu_scaled.time_boot_ms
-            self.xgyro_scaled_ref = imu_scaled.xgyro
-            self.ygyro_scaled_ref = imu_scaled.ygyro
-            self.zgyro_scaled_ref = imu_scaled.zgyro
-            self.xmag_scaled_ref  = imu_scaled.xmag
-            self.ymag_scaled_ref  = imu_scaled.ymag
-            self.zmag_scaled_ref  = imu_scaled.zmag 
-            self.xacc_scaled_ref  = imu_scaled.xacc
-            self.yacc_scaled_ref  = imu_scaled.yacc
-            self.zacc_scaled_ref  = imu_scaled.zacc
+            self.time_boot_ms_ref = self.imu_scaled.time_boot_ms
+            self.xgyro_scaled_ref = self.imu_scaled.xgyro
+            self.ygyro_scaled_ref = self.imu_scaled.ygyro
+            self.zgyro_scaled_ref = self.imu_scaled.zgyro
+            self.xmag_scaled_ref  = self.imu_scaled.xmag
+            self.ymag_scaled_ref  = self.imu_scaled.ymag
+            self.zmag_scaled_ref  = self.imu_scaled.zmag 
+            self.xacc_scaled_ref  = self.imu_scaled.xacc
+            self.yacc_scaled_ref  = self.imu_scaled.yacc
+            self.zacc_scaled_ref  = self.imu_scaled.zacc
 
         print( "xgyro:", self.xgyro_scaled_ref,'\n',
             "ygyro:", self.ygyro_scaled_ref,'\n',
