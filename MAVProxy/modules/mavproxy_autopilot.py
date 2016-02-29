@@ -6,161 +6,332 @@ from MAVProxy.modules.lib.mp_settings import MPSetting
 
 class Autopilotmodule(mp_module.MPModule):
 
-    def __init__(self, mpstate):
-        super(Autopilotmodule, self).__init__(mpstate, "autopilot", "autopilot command ", public = True)
-        self.override = [ 0 ] * 16
-        self.last_override = [ 0 ] * 16
-        self.override_counter = 0
-        self.check_imu_counter = 0
-        self.add_command('autopilot', self.cmd_ap, "Autopilot input control", ['< Magnitude, Angle >'])
-        self.add_command('current_imu', self.print_imu, "prints out current IMU data", [ '' ])
+	def __init__(self, mpstate):
+		super(Autopilotmodule, self).__init__(mpstate, "autopilot", "autopilot command ", public = True)
+		self.override = [ 0 ] * 16
+		self.last_override = [ 0 ] * 16
+		self.override_counter = 0
+		self.check_imu_counter = 0
+		self.recipNorm = 0
+		self.beta = 0.1
+		self.sampleFreq	= 512.0		# sample frequency in Hz
+		self.q0 = 1.0
+		self.q1 = 0.0 
+		self.q2 = 0.0 
+		self.q3 = 0.0	# quaternion of sensor frame relative to auxiliary frame
 
-        self.waiting_for_command = True
-        if self.sitl_output:
-            self.override_period = mavutil.periodic_event(20)
-        else:
-            self.override_period = mavutil.periodic_event(1)
-        
-    def idle_task(self):
+		self.s0, self.s1, self.s2, self.s3 = 0
+		self.qDot1, self.qDot2, self.qDot3, self.qDot4
+		self.hx, self.hy
+		self._2q0mx, self._2q0my, self._2q0mz, self._2q1mx, self._2bx, self._2bz, self._4bx, self._4bz, self._2q0, self._2q1, self._2q2, self._2q3, self._2q0q2, self._2q2q3, self.q0q0, self.q0q1, self.q0q2, self.q0q3, self.q1q1, self.q1q2, self.q1q3, self.q2q2, self.q2q3, self.q3q3;
+		self.add_command('autopilot', self.cmd_ap, "Autopilot input control", ['< Magnitude, Angle >'])
+		self.add_command('current_imu', self.print_imu, "prints out current IMU data", [ '' ])
 
-        self.refresh_imu_data()
-        #self.check_imu_counter += 1
-        #if self.check_imu_counter % 100 is 0:
-            #print("check_imu_counter:", self.check_imu_counter)
-        if self.override_period.trigger():
-            if (self.override != [ 0 ] * 16 or
-                self.override != self.last_override or
-                self.override_counter > 0):
-                self.last_override = self.override[:]
-                self.send_rc_override()
-                if self.override_counter > 0:
-                    self.override_counter -= 1
+		self.waiting_for_command = True
+		if self.sitl_output:
+			self.override_period = mavutil.periodic_event(20)
+		else:
+			self.override_period = mavutil.periodic_event(1)
+		
+	def idle_task(self):
+
+		self.refresh_imu_data()
+		#self.check_imu_counter += 1
+		#if self.check_imu_counter % 100 is 0:
+			#print("check_imu_counter:", self.check_imu_counter)
+		if self.override_period.trigger():
+			if (self.override != [ 0 ] * 16 or
+				self.override != self.last_override or
+				self.override_counter > 0):
+				self.last_override = self.override[:]
+				self.send_rc_override()
+				if self.override_counter > 0:
+					self.override_counter -= 1
 
 
-    def set_mode(self, args):
-        '''set arbitrary mode'''
-        mode_mapping = self.master.mode_mapping()
-        if mode_mapping is None:
-            print('No mode mapping available')
-            return
-        if len(args) != 1:
-            print('Available modes: ', mode_mapping.keys())
-            return
-        if args[0].isdigit():
-            modenum = int(args[0])
-        else:
-            mode = args[0].upper()
-            if mode not in mode_mapping:
-                print('Unknown mode %s: ' % mode)
-                return
-            modenum = mode_mapping[mode]
-        self.master.set_mode(modenum)
+	def set_mode(self, args):
+		'''set arbitrary mode'''
+		mode_mapping = self.master.mode_mapping()
+		if mode_mapping is None:
+			print('No mode mapping available')
+			return
+		if len(args) != 1:
+			print('Available modes: ', mode_mapping.keys())
+			return
+		if args[0].isdigit():
+			modenum = int(args[0])
+		else:
+			mode = args[0].upper()
+			if mode not in mode_mapping:
+				print('Unknown mode %s: ' % mode)
+				return
+			modenum = mode_mapping[mode]
+		self.master.set_mode(modenum)
 
-    
-    def refresh_imu_data(self):
-        ''' checks for existance of imu data'''
-        if 'RAW_IMU' in self.status.msgs:
-            self.imu_raw = self.status.msgs['RAW_IMU']
-            self.time_usec_raw = self.imu_raw.time_usec
-            self.xgyro_raw = self.imu_raw.xgyro
-            self.ygyro_raw = self.imu_raw.ygyro
-            self.zgyro_raw = self.imu_raw.zgyro
-            self.xmag_raw  = self.imu_raw.xmag
-            self.ymag_raw  = self.imu_raw.ymag
-            self.zmag_raw  = self.imu_raw.zmag
-            self.xacc_raw  = self.imu_raw.xacc
-            self.yacc_raw  = self.imu_raw.yacc
-            self.zacc_raw  = self.imu_raw.zacc
-        if 'SCALED_IMU2' in self.status.msgs:
-            self.imu_scaled = self.status.msgs['SCALED_IMU2']
-            self.time_boot_ms = self.imu_scaled.time_boot_ms
-            self.xgyro_scaled = self.imu_scaled.xgyro
-            self.ygyro_scaled = self.imu_scaled.ygyro
-            self.zgyro_scaled = self.imu_scaled.zgyro
-            self.xmag_scaled  = self.imu_scaled.xmag
-            self.ymag_scaled  = self.imu_scaled.ymag
-            self.zmag_scaled  = self.imu_scaled.zmag
-            self.xacc_scaled  = self.imu_scaled.xacc
-            self.yacc_scaled  = self.imu_scaled.yacc
-            self.zacc_scaled  = self.imu_scaled.zacc
+	
+	def refresh_imu_data(self):
+		''' checks for existance of imu data'''
+		if 'RAW_IMU' in self.status.msgs:
+			self.imu_raw = self.status.msgs['RAW_IMU']
+			self.time_usec_raw = self.imu_raw.time_usec
+			self.xgyro_raw = self.imu_raw.xgyro
+			self.ygyro_raw = self.imu_raw.ygyro
+			self.zgyro_raw = self.imu_raw.zgyro
+			self.xmag_raw  = self.imu_raw.xmag
+			self.ymag_raw  = self.imu_raw.ymag
+			self.zmag_raw  = self.imu_raw.zmag
+			self.xacc_raw  = self.imu_raw.xacc
+			self.yacc_raw  = self.imu_raw.yacc
+			self.zacc_raw  = self.imu_raw.zacc
+		if 'SCALED_IMU2' in self.status.msgs:
+			self.imu_scaled = self.status.msgs['SCALED_IMU2']
+			self.time_boot_ms = self.imu_scaled.time_boot_ms
+			self.xgyro_scaled = self.imu_scaled.xgyro
+			self.ygyro_scaled = self.imu_scaled.ygyro
+			self.zgyro_scaled = self.imu_scaled.zgyro
+			self.xmag_scaled  = self.imu_scaled.xmag
+			self.ymag_scaled  = self.imu_scaled.ymag
+			self.zmag_scaled  = self.imu_scaled.zmag
+			self.xacc_scaled  = self.imu_scaled.xacc
+			self.yacc_scaled  = self.imu_scaled.yacc
+			self.zacc_scaled  = self.imu_scaled.zacc
 
-    def print_imu(self, args):
-        print (
-            self.xgyro_raw,
-            self.ygyro_raw,
-            self.zgyro_raw,
-            self.xmag_raw,
-            self.ymag_raw,
-            self.zmag_raw,
-            self.xacc_raw,
-            self.yacc_raw,
-            self.zacc_raw,
-            self.time_boot_ms,
-            self.xgyro_scaled,
-            self.ygyro_scaled,
-            self.zgyro_scaled,
-            self.xmag_scaled,
-            self.ymag_scaled,
-            self.zmag_scaled,
-            self.xacc_scaled,
-            self.yacc_scaled,
-            self.zacc_scaled)
+		self.AHRSUpdate(self.xgyro_raw, self.ygyro_raw, self.zgyro_raw,
+						self.xacc_raw, self.yacc_raw, self.zacc_raw,
+					    self.xmag_raw, self.ymag_raw, self.zmag_raw)
+		 
 
-    def calculate_channels(self, magnitude, angle):
-        pass
+	def print_imu(self, args):
+		print (
+			self.xgyro_raw,
+			self.ygyro_raw,
+			self.zgyro_raw,
+			self.xmag_raw,
+			self.ymag_raw,
+			self.zmag_raw,
+			self.xacc_raw,
+			self.yacc_raw,
+			self.zacc_raw,
+			self.time_boot_ms,
+			self.xgyro_scaled,
+			self.ygyro_scaled,
+			self.zgyro_scaled,
+			self.xmag_scaled,
+			self.ymag_scaled,
+			self.zmag_scaled,
+			self.xacc_scaled,
+			self.yacc_scaled,
+			self.zacc_scaled)
 
-    def update_motors(self, args):
-        '''handle RC value override'''
-        if len(args) != 2:
-            print("Usage: rc <channel|all> <pwmvalue> incorrect inside autopilot")
-            return
-        value = int(args[1])
-        if value > 65535 or value < -1:
-            raise ValueError("PWM value must be a positive integer between 0 and 65535")
-        if value == -1:
-            value = 65535
-        channels = self.override
-        if args[0] == 'all':
-            for i in range(16):
-                channels[i] = value
-        else:
-            channel = int(args[0])
-            if channel < 1 or channel > 16:
-                print("Channel must be between 1 and 8 or 'all'")
-                return
-            channels[channel - 1] = value
-        self.set_override(channels)
+	def calculate_channels(self, magnitude, angle):
+		pass
 
-    def set_override(self, newchannels):
-        '''this is a public method for use by drone API or other scripting'''
-        self.override = newchannsels
-        self.override_counter = 10
-        self.send_rc_override()
+	def update_motors(self, args):
+		'''handle RC value override'''
+		if len(args) != 2:
+			print("Usage: rc <channel|all> <pwmvalue> incorrect inside autopilot")
+			return
+		value = int(args[1])
+		if value > 65535 or value < -1:
+			raise ValueError("PWM value must be a positive integer between 0 and 65535")
+		if value == -1:
+			value = 65535
+		channels = self.override
+		if args[0] == 'all':
+			for i in range(16):
+				channels[i] = value
+		else:
+			channel = int(args[0])
+			if channel < 1 or channel > 16:
+				print("Channel must be between 1 and 8 or 'all'")
+				return
+			channels[channel - 1] = value
+		self.set_override(channels)
 
-    def send_rc_override(self):
-        '''send RC override packet'''
-        if self.sitl_output:
-            buf = struct.pack('<HHHHHHHHHHHHHHHH',
-                              *self.override)
-            self.sitl_output.write(buf)
-        else:
-            chan8 = self.override[:8]
-            self.master.mav.rc_channels_override_send(self.target_system,
-                                                           self.target_component,
-                                                           *chan8)
+	def set_override(self, newchannels):
+		'''this is a public method for use by drone API or other scripting'''
+		self.override = newchannsels
+		self.override_counter = 10
+		self.send_rc_override()
 
-    def cmd_ap(self, args):
-        if self.waiting_for_command:
-            set_mode('ALT_HOLD')
-        else:
-            set_mode("STABILIZED")
+	def send_rc_override(self):
+		'''send RC override packet'''
+		if self.sitl_output:
+			buf = struct.pack('<HHHHHHHHHHHHHHHH',
+							  *self.override)
+			self.sitl_output.write(buf)
+		else:
+			chan8 = self.override[:8]
+			self.master.mav.rc_channels_override_send(self.target_system,
+														   self.target_component,
+														   *chan8)
+
+	def cmd_ap(self, args):
+		if self.waiting_for_command:
+			set_mode('ALT_HOLD')
+		else:
+			set_mode("STABILIZED")
+
+	def AHRSUpdate(self, gx, gy, gz, ax, ay, az, mx, my, mz):
+	
+	# Use IMU algorithm if magnetometer measurement invalid (avoids NaN in magnetometer normalisation)
+		if((mx == 0.0) and (my == 0.0) and (mz == 0.0)):
+			self.IMU_update(gx, gy, gz, ax, ay, az)
+			return
+
+		# Rate of change of quaternion from gyroscope
+		self.qDot1 = 0.5 * (-self.q1 * gx - self.q2 * gy - self.q3 * gz)
+		self.qDot2 = 0.5 * (self.q0 * gx + self.q2 * gz - self.q3 * gy)
+		self.qDot3 = 0.5 * (self.q0 * gy - self.q1 * gz + self.q3 * gx)
+		self.qDot4 = 0.5 * (self.q0 * gz + self.q1 * gy - self.q2 * gx)
+
+		# Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
+		if(not((ax == 0.0) and (ay == 0.0) and (az == 0.0))):
+
+			# Normalise accelerometer measurement
+			self.recipNorm = (ax * ax + ay * ay + az * az)**-.5
+			ax *= self.recipNorm;
+			ay *= self.recipNorm;
+			az *= self.recipNorm;   
+
+			# Normalise magnetometer measurement
+			self.recipNorm = (mx * mx + my * my + mz * mz)**-.5
+			mx *= self.recipNorm;
+			my *= self.recipNorm;
+			mz *= self.recipNorm;
+
+			# Auxiliary variables to avoid repeated arithmetic
+			self._2q0mx = 2.0 * self.q0 * mx;
+			self._2q0my = 2.0 * self.q0 * my;
+			self._2q0mz = 2.0 * self.q0 * mz;
+			self._2q1mx = 2.0 * self.q1 * mx;
+			self._2q0   = 2.0 * self.q0;
+			self._2q1   = 2.0 * self.q1;
+			self._2q2   = 2.0 * self.q2;
+			self._2q3   = 2.0 * self.q3;
+			self._2q0q2 = 2.0 * self.q0 * self.q2;
+			self._2q2q3 = 2.0 * self.q2 * self.q3;
+			self.q0q0   = self.q0 * self.q0
+			self.q0q1   = self.q0 * self.q1
+			self.q0q2   = self.q0 * self.q2
+			self.q0q3   = self.q0 * self.q3
+			self.q1q1   = self.q1 * self.q1
+			self.q1q2   = self.q1 * self.q2
+			self.q1q3   = self.q1 * self.q3
+			self.q2q2   = self.q2 * self.q2
+			self.q2q3   = self.q2 * self.q3
+			self.q3q3   = self.q3 * self.q3
+
+			# Reference direction of Earth's magnetic field
+			self.hx = mx * self.q0q0 - self._2q0my * self.q3 + self._2q0mz * self.q2 + mx * self.q1q1 + self._2q1 * my * self.q2 + self._2q1 * mz * self.q3 - mx * self.q2q2 - mx * self.q3q3;
+			self.hy = self._2q0mx * self.q3 + my * self.q0q0 - self._2q0mz * self.q1 + self._2q1mx * self.q2 - my * self.q1q1 + my * self.q2q2 + self._2q2 * mz * self.q3 - my * self.q3q3;
+			self._2bx = (hx * hx + hy * hy)**.5;
+			self._2bz = -self._2q0mx * self.q2 + self._2q0my * self.q1 + mz * self.q0q0 + self._2q1mx * self.q3 - mz * self.q1q1 + self._2q2 * my * self.q3 - mz * self.q2q2 + mz * self.q3q3;
+			self._4bx = 2.0 * self._2bx
+			self._4bz = 2.0 * self._2bz
+
+			# Gradient decent algorithm corrective step
+			self.s0 = -self._2q2 * (2.0 * vq1q3 - self._2q0q2 - ax) + self._2q1 * (2.0 * self.q0q1 + self._2q2q3 - ay) - self._2bz * self.q2 * (self._2bx * (0.5 - self.q2q2 - self.q3q3) + self._2bz * (self.q1q3 - self.q0q2) - mx) + (-self._2bx * self.q3 + self._2bz * self.q1) * (self._2bx * (self.q1q2 - self.q0q3) + self._2bz * (self.q0q1 + self.q2q3) - my) + self._2bx * self.q2 * (self._2bx * (self.q0q2 + self.q1q3) + self._2bz * (0.5 - self.q1q1 - self.q2q2) - mz);
+			self.s1 = self._2q3 * (2.0 * self.q1q3 - self._2q0q2 - ax) + self._2q0 * (2.0 * self.q0q1 + self._2q2q3 - ay) - 4.0 * self.q1 * (1 - 2.0 * self.q1q1 - 2.0 * self.q2q2 - az) + self._2bz * q3 * (self._2bx * (0.5 - self.q2q2 - self.q3q3) + self._2bz * (self.q1q3 - self.q0q2) - mx) + (self._2bx * self.q2 + self._2bz * self.q0) * (self._2bx * (self.q1q2 - self.q0q3) + self._2bz * (self.q0q1 + self.q2q3) - my) + (self._2bx * self.q3 - self._4bz * self.q1) * (self._2bx * (self.q0q2 + self.q1q3) + self._2bz * (0.5 - self.q1q1 - self.q2q2) - mz);
+			self.s2 = -self._2q0 * (2.0 * self.q1q3 - self._2q0q2 - ax) + self._2q3 * (2.0 * self.q0q1 + self._2q2q3 - ay) - 4.0 * self.q2 * (1 - 2.0 * self.q1q1 - 2.0 * self.q2q2 - az) + (-self._4bx * self.q2 - self._2bz * self.q0) * (self._2bx * (0.5 - self.q2q2 - self.q3q3) + self._2bz * (self.q1q3 - self.q0q2) - mx) + (self._2bx * self.q1 + self._2bz * self.q3) * (self._2bx * (self.q1q2 - self.q0q3) + self._2bz * (self.q0q1 + self.q2q3) - my) + (self._2bx * self.q0 - self._4bz * self.q2) * (_2bx * (self.q0q2 + self.q1q3) + self._2bz * (0.5 - self.q1q1 - self.q2q2) - mz);
+			self.s3 = self._2q1 * (2.0 * self.q1q3 - self._2q0q2 - ax) + self._2q2 * (2.0 * self.q0q1 + self._2q2q3 - ay) + (-self._4bx * self.q3 + self._2bz * self.q1) * (self._2bx * (0.5 - self.q2q2 - self.q3q3) + self._2bz * (self.q1q3 - self.q0q2) - mx) + (-self._2bx * self.q0 + self._2bz * self.q2) * (self._2bx * (self.q1q2 - self.q0q3) + self._2bz * (self.q0q1 + self.q2q3) - my) + self._2bx * self.q1 * (self._2bx * (self.q0q2 + self.q1q3) + self._2bz * (0.5 - self.q1q1 - self.q2q2) - mz);
+			self.recipNorm = (self.s0 * self.s0 + self.s1 * self.s1 + self.s2 * self.s2 + self.s3 * self.s3)**-.5; # normalise step magnitudeself.
+			self.s0 *= self.recipNorm
+			self.s1 *= self.recipNorm
+			self.s2 *= self.recipNorm
+			self.s3 *= self.recipNorm
+
+			# Apply feedback step
+			self.qDot1 -= self.beta * self.s0
+			self.qDot2 -= self.beta * self.s1
+			self.qDot3 -= self.beta * self.s2
+			self.qDot4 -= self.beta * self.s3
+	
+
+		# Integrate rate of change of quaternion to yield quaternion
+		self.q0 += self.qDot1 * (1.0 / self.sampleFreq)
+		self.q1 += self.qDot2 * (1.0 / self.sampleFreq)
+		self.q2 += self.qDot3 * (1.0 / self.sampleFreq)
+		self.q3 += self.qDot4 * (1.0 / self.sampleFreq)
+
+		# Normalise quaternion
+		self.recipNorm = (self.q0 * self.q0 + self.q1 * self.q1 + self.q2 * self.q2 + self.q3 * self.q3)**-.5
+		self.q0 *= self.recipNorm
+		self.q1 *= self.recipNorm
+		self.q2 *= self.recipNorm
+		self.q3 *= self.recipNorm
+
+	# IMU algorithm update
+	def IMU_update(gx, gy, gz, ax, ay, az):
+	  
+		# Rate of change of quaternion from gyroscope
+		self.qDot1 = 0.5 * (-self.q1 * gx - self.q2 * gy - self.q3 * gz)
+		self.qDot2 = 0.5 * (self.q0 * gx + self.q2 * gz - self.q3 * gy)
+		self.qDot3 = 0.5 * (self.q0 * gy - self.q1 * gz + self.q3 * gx)
+		self.qDot4 = 0.5 * (self.q0 * gz + self.q1 * gy - self.q2 * gx)
+
+		# Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
+		if(not((ax == 0.0) and (ay == 0.0) and (az == 0.0))):
+
+			# Normalise accelerometer measurement
+			self.recipNorm = (ax * ax + ay * ay + az * az)**-.5
+			ax *= self.recipNorm;
+			ay *= self.recipNorm;
+			az *= self.recipNorm;   
+
+			# Auxiliary variables to avoid repeated arithmetic
+			self._2q0 = 2.0 * self.q0;
+			self._2q1 = 2.0 * self.q1;
+			self._2q2 = 2.0 * self.q2;
+			self._2q3 = 2.0 * self.q3;
+			self._4q0 = 4.0 * self.q0;
+			self._4q1 = 4.0 * self.q1;
+			self._4q2 = 4.0 * self.q2;
+			self._8q1 = 8.0 * self.q1;
+			self._8q2 = 8.0 * self.q2;
+			self.q0q0 = self.q0 * self.q0;
+			self.q1q1 = self.q1 * self.q1;
+			self.q2q2 = self.q2 * self.q2;
+			self.q3q3 = self.q3 * self.q3;
+
+			# Gradient decent algorithm corrective step
+			self.s0 = self._4q0 * self.q2q2 + self._2q2 * ax + self._4q0 * self.q1q1 - self._2q1 * ay;
+			self.s1 = self._4q1 * self.q3q3 - self._2q3 * ax + 4.0 * self.q0q0 * self.q1 - self._2q0 * ay - self._4q1 + self._8q1 * self.q1q1 + self._8q1 * self.q2q2 + self._4q1 * az;
+			self.s2 = 4.0 * self.q0q0 * self.q2 + self._2q0 * ax + self._4q2 * self.q3q3 - self._2q3 * ay - self._4q2 + self._8q2 * self.q1q1 + self._8q2 * self.q2q2 + self._4q2 * az;
+			self.s3 = 4.0 * self.q1q1 * self.q3 - self._2q1 * ax + 4.0 * self.q2q2 * self.q3 - self._2q2 * ay;
+			self.recipNorm = (self.s0 * self.s0 + self.s1 * self.s1 + self.s2 * self.s2 + self.s3 * self.s3)**-.5 # normalise step magnitude
+			self.s0 *= self.recipNorm;
+			self.s1 *= self.recipNorm;
+			self.s2 *= self.recipNorm;
+			self.s3 *= self.recipNorm;
+
+			# Apply feedback step
+			self.qDot1 -= self.beta * self.s0
+			self.qDot2 -= self.beta * self.s1
+			self.qDot3 -= self.beta * self.s2
+			self.qDot4 -= self.beta * self.s3
+
+		# Integrate rate of change of quaternion to yield quaternion
+		self.q0 += self.qDot1 * (1.0 / self.sampleFreq)
+		self.q1 += self.qDot2 * (1.0 / self.sampleFreq)
+		self.q2 += self.qDot3 * (1.0 / self.sampleFreq)
+		self.q3 += self.qDot4 * (1.0 / self.sampleFreq)
+
+		# Normalise quaternion
+		self.recipNorm = (self.q0 * self.q0 + self.q1 * self.q1 + self.q2 * self.q2 + self.q3 * self.q3)**-0.5
+		self.q0 *= self.recipNorm
+		self.q1 *= self.recipNorm
+		self.q2 *= self.recipNorm
+		self.q3 *= self.recipNorm
+
+
 
 def init(mpstate):
-    '''initialise module'''
-    return Autopilotmodule(mpstate)
+	'''initialise module'''
+	return Autopilotmodule(mpstate)
 
 
-        
+		
 
 
 
