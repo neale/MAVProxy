@@ -49,7 +49,7 @@ class SetRefModule(mp_module.MPModule):
             self.yacc_scaled_ref  = self.imu_scaled.yacc
             self.zacc_scaled_ref  = self.imu_scaled.zacc
 
-    def print_ref(self):
+    def print_ref(self, args):
         print( "xgyro:", self.xgyro_scaled_ref,'\n',
             "ygyro:", self.ygyro_scaled_ref,'\n',
             "zg yro:", self.zgyro_scaled_ref,'\n',
