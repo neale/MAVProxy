@@ -17,7 +17,9 @@ class Autopilotmodule(mp_module.MPModule):
 		self.add_command('current_imu', self.print_imu, "prints out current IMU data", [ '' ])
 		self.add_command('open_socket', self.cmd_sock, "connect to socket", ['sockno'])
 		self.add_command('close_socket', self.close_sock, "close socket", ['sockno'])
+		
 		# class variables
+		self.sock_option = False
 		self.depth_avg = 0
 		self.override = [ 0 ] * 16
 		self.last_override = [ 0 ] * 16
@@ -47,18 +49,21 @@ class Autopilotmodule(mp_module.MPModule):
 
 					
 	def idle_task(self):
-
+		
 		self.refresh_imu_data()
-		if self.port is 0:
-		   self.cmd_sock(9999)
-		try:
-			self.depth = self.sock.recv(14)
-			self.target_altitude = self.depth+3000
-			print("depth: ", self.depth)
+		if self.sock_option is True:
+			if self.port is 0:
+				self.cmd_sock(9999)
+			try:
+				self.depth = self.sock.recv(14)
+				self.target_altitude = self.depth+3000
+				print("depth: ", self.depth)
 
-		except socket.timeout:
-			socket.close()
-			
+			except socket.timeout:
+				socket.close()
+				self.sock_option = False
+			except socket.error:
+				pass
 		#self.check_imu_counter += 1
 		#if self.check_imu_counter % 100 is 0:
 			#print("check_imu_counter:", self.check_imu_counter)
@@ -190,6 +195,7 @@ class Autopilotmodule(mp_module.MPModule):
 														   *chan8)
 	
 	def cmd_sock(self, args):
+		self.sock_option = True
 		if type(args) is int:
 			self.port = args
 		else:
@@ -201,15 +207,18 @@ class Autopilotmodule(mp_module.MPModule):
 			else:
 				self.port = args
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		self.sock.connect(('localhost', self.port))
+		try:
+			self.sock.connect(('localhost', self.port))
+		except socket.error:
+			print("socket not availible")
 		socket.timeout(0.1)
 		print("connecting to socket:", self.port)
 		time.sleep(0.2)
 
-
-
 	def close_sock(self, args):
-		pass
+		self.sock_option = False
+		socket.close()
+
 	def cmd_ap(self, args):
 		if self.waiting_for_command:
 			set_mode('ALT_HOLD')
