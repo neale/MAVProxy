@@ -196,9 +196,11 @@ class Autopilotmodule(mp_module.MPModule):
 	
 	def cmd_sock(self, args):
 		self.sock_option = True
-		if type(args) is str:
+		print("attemping connection to ", args) 
+
+		if type(args) is list:
 			try:
-				args = int(args)
+				args = int(args[0])
 				self.port = args
 			except:
 				print("could not convert socket, trying port 9999")
