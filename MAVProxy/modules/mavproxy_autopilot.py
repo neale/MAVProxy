@@ -25,7 +25,7 @@ class Autopilotmodule(mp_module.MPModule):
         self.pwm_val = 1400
         self.pwm_max = 1800
         self.pwm_min = 1100
-        self.hover_pwm_val = 1500
+        self.hover_pwm_val = 1450
         self.depth = 0
         self.last_depth = collections.deque([0]*10, 10) # for summing last ten depth samples
         self.override = [ 0 ] * 16
@@ -251,13 +251,13 @@ class Autopilotmodule(mp_module.MPModule):
             print("Stabilizing")
         # Coptor isn't high enough
         elif average < 900:
-            self.pwm_val = 1560
+            self.pwm_val = 1540
             self.cmd_rc([3, self.pwm_val])
             print("Throttling up")
 
         # Coptor is higher than we want     
         elif average > 900:
-            self.pwm_val = 1200
+            self.pwm_val = 1400
             self.cmd_rc([3, self.pwm_val])
             print("Throttling down")
         #We're right on point       
