@@ -51,7 +51,7 @@ class Autopilotmodule(mp_module.MPModule):
 	def idle_task(self):
 		
 		self.refresh_imu_data()
-		if self.sock_option is True:
+		if self.sock_option == True:
 			if self.port is 0:
 				self.cmd_sock(9999)
 			try:
