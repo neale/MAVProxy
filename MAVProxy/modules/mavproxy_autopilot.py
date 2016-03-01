@@ -56,7 +56,7 @@ class Autopilotmodule(mp_module.MPModule):
 				self.cmd_sock(9999)
 			try:
 				self.depth = self.sock.recv(14)
-				self.target_altitude = int(round(float(self.depth)))+3000
+				self.target_altitude = int((float(self.depth))+3000
 				
 
 			except socket.timeout:
@@ -96,7 +96,7 @@ class Autopilotmodule(mp_module.MPModule):
 			modenum = mode_mapping[mode]
 		self.master.set_mode(modenum)
 
-	def cmd_depth(self):
+	def cmd_depth(self, args):
 		print("center depth: ", self.depth)
 
 	def refresh_imu_data(self):
