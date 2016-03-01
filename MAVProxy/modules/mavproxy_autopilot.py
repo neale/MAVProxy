@@ -164,7 +164,7 @@ class Autopilotmodule(mp_module.MPModule):
 	def calculate_channels(self, magnitude, angle):
 		pass
 
-	def update_motors(self, args):
+	def cmd_rc(self, args):
 		'''handle RC value override'''
 		if len(args) != 2:
 			print("Usage: rc <channel|all> <pwmvalue> incorrect inside autopilot")
