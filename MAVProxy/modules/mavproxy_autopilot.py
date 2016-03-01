@@ -67,6 +67,7 @@ class Autopilotmodule(mp_module.MPModule):
 				socket.close()
 				self.sock_option = False
 			except socket.error:
+
 				pass
 		
 		if self.auto == True:
@@ -234,12 +235,12 @@ class Autopilotmodule(mp_module.MPModule):
 
 	def cmd_ap(self, args):
 		# Coptor isn't high enough
-		if sum(last_depth)/10 < 900:
+		if sum(self.last_depth)/10 < 900:
 			fast_pwm_val = 1550
 			self.cmd_rc([1, fast_pwm_val])
 
 		# Coptor is higher than we want     
-		elif sum(last_depth)/10 > 900:
+		elif sum(self.last_depth)/10 > 900:
 			slow_pwm_val = 1350
 			self.cmd_rc([1, slow_pwm_val])
 		#We're right on point       
