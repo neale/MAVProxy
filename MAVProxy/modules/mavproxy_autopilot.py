@@ -1,5 +1,5 @@
 
-import time, os, struct, math, socket
+import time, os, struct, math, socket, collections
 from pymavlink import mavutil
 from MAVProxy.modules.lib import mp_module
 from MAVProxy.modules.lib.mp_settings import MPSetting
@@ -8,7 +8,7 @@ class Autopilotmodule(mp_module.MPModule):
 
 	def __init__(self, mpstate):
 		#initialize gains
-		self.Kp = 0
+		self.Kp = 0.75
 		self.Kd = 0
 		self.Ki = 0
 		
@@ -20,7 +20,9 @@ class Autopilotmodule(mp_module.MPModule):
 		self.add_command('current_depth', self.cmd_depth, "get current object depth") 
 		# class variables
 		self.sock_option = False
-		self.depth_avg = 0
+		self.auto = False
+		self.depth = 0
+		self.last_depth = collections.deque([0]*10, 10) # for summing last ten depth samples
 		self.override = [ 0 ] * 16
 		self.last_override = [ 0 ] * 16
 		self.override_counter = 0
@@ -46,19 +48,19 @@ class Autopilotmodule(mp_module.MPModule):
 			self.override_period = mavutil.periodic_event(1)
 	
 		self.Initialize()
-
-					
+				
 	def idle_task(self):
 		
 		self.refresh_imu_data()
 		if self.sock_option == True:
 			if self.port is 0:
 				self.cmd_sock(9999)
-			self.last_depth = self.depth
+			self.last_depth.appendleft(self.depth)
 			self.depth = self.sock.recv(14)
 			try:
 				self.target_altitude = int((float(self.depth)))+3000
 				self.depth = int(float(self.depth))
+				
 			except ValueError:
 				pass
 			except socket.timeout:
@@ -66,6 +68,9 @@ class Autopilotmodule(mp_module.MPModule):
 				self.sock_option = False
 			except socket.error:
 				pass
+		
+		if self.suto == True:
+			self.cmd_ap()
 		#self.check_imu_counter += 1
 		#if self.check_imu_counter % 100 is 0:
 			#print("check_imu_counter:", self.check_imu_counter)
@@ -132,7 +137,7 @@ class Autopilotmodule(mp_module.MPModule):
 						self.xacc_raw, self.yacc_raw, self.zacc_raw,
 						self.xmag_raw, self.ymag_raw, self.zmag_raw)"""
 		 
-
+	
 	def print_imu(self, args):
 		print (
 			self.xgyro_raw,
@@ -228,10 +233,19 @@ class Autopilotmodule(mp_module.MPModule):
 		socket.close()
 
 	def cmd_ap(self, args):
-		if self.waiting_for_command:
-			set_mode('ALT_HOLD')
+		# Coptor isn't high enough
+		if sum(last_depth)/10 < 900:
+			fast_pwm_val = 1550
+			self.cmd_rc([1, fast_pwm_val])
+
+		# Coptor is higher than we want     
+		elif sum(last_depth)/10 > 900:
+			slow_pwm_val = 1350
+			self.cmd_rc([1, slow_pwm_val])
+		#We're right on point       
 		else:
-			set_mode("STABILIZED")
+			hover_pwm_val = 1450
+			self.cmd_rc([1, hover_pwm_val])
 
 			
 	def SetKp(self, invar):
