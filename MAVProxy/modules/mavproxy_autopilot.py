@@ -69,7 +69,7 @@ class Autopilotmodule(mp_module.MPModule):
 			except socket.error:
 				pass
 		
-		if self.suto == True:
+		if self.auto == True:
 			self.cmd_ap()
 		#self.check_imu_counter += 1
 		#if self.check_imu_counter % 100 is 0:
