@@ -56,7 +56,7 @@ class Autopilotmodule(mp_module.MPModule):
 				self.cmd_sock(9999)
 			try:
 				self.depth = self.sock.recv(14)
-				self.target_altitude = self.depth+3000
+				self.target_altitude = int(self.depth)+3000
 				print("depth: ", self.depth)
 
 			except socket.timeout:
@@ -196,8 +196,12 @@ class Autopilotmodule(mp_module.MPModule):
 	
 	def cmd_sock(self, args):
 		self.sock_option = True
-		if type(args) is int:
-			self.port = args
+		if type(args) is str:
+			try:
+				args = int(args)
+				self.port = args
+			except:
+				print("could not convert socket, trying port 9999")
 		else:
 			if len(args) > 1:
 				print("Usage: socket <portno>")
