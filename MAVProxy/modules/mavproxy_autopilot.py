@@ -56,6 +56,7 @@ class Autopilotmodule(mp_module.MPModule):
 				self.cmd_sock(9999)
 			try:
 				self.depth = self.sock.recv(14)
+				print(repr(self.depth))
 				self.target_altitude = int((float(self.depth)))+3000
 			except socket.timeout:
 				socket.close()
