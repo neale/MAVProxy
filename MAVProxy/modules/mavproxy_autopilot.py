@@ -17,7 +17,7 @@ class Autopilotmodule(mp_module.MPModule):
 		self.add_command('current_imu', self.print_imu, "prints out current IMU data", [ '' ])
 		self.add_command('open_socket', self.cmd_sock, "connect to socket", ['sockno'])
 		self.add_command('close_socket', self.close_sock, "close socket", ['sockno'])
-		
+		self.add_command('current_depth', self.cmd_depth, "get current object depth") 
 		# class variables
 		self.sock_option = False
 		self.depth_avg = 0
@@ -57,7 +57,7 @@ class Autopilotmodule(mp_module.MPModule):
 			try:
 				self.depth = self.sock.recv(14)
 				self.target_altitude = int(round(float(self.depth)))+3000
-				print("depth: ", self.depth)
+				
 
 			except socket.timeout:
 				socket.close()
@@ -96,7 +96,9 @@ class Autopilotmodule(mp_module.MPModule):
 			modenum = mode_mapping[mode]
 		self.master.set_mode(modenum)
 
-	
+	def cmd_depth(self):
+		print("center depth: ", self.depth)
+
 	def refresh_imu_data(self):
 		''' checks for existance of imu data'''
 		if 'RAW_IMU' in self.status.msgs:
