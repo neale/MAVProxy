@@ -188,7 +188,7 @@ class Autopilotmodule(mp_module.MPModule):
 
 	def set_override(self, newchannels):
 		'''this is a public method for use by drone API or other scripting'''
-		self.override = newchannsels
+		self.override = newchannels
 		self.override_counter = 10
 		self.send_rc_override()
 
