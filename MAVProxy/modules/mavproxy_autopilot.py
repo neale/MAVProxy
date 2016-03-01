@@ -54,10 +54,13 @@ class Autopilotmodule(mp_module.MPModule):
 		if self.sock_option == True:
 			if self.port is 0:
 				self.cmd_sock(9999)
+			self.last_depth = self.depth
+			self.depth = self.sock.recv(14)
 			try:
-				self.depth = self.sock.recv(14)
-				print(repr(self.depth))
 				self.target_altitude = int((float(self.depth)))+3000
+				self.depth = int(float(self.depth))
+			except ValueError:
+				pass
 			except socket.timeout:
 				socket.close()
 				self.sock_option = False
