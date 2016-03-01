@@ -244,7 +244,11 @@ class Autopilotmodule(mp_module.MPModule):
     def cmd_ap(self, args):
         self.auto = True
         average = sum(self.last_depth)/10
+        if 'RC_CHANNELS_RAW' in self.status.msgs:
+            self.servos = self.status.msgs['RC_CHANNELS_RAW']          
+            self.throttle = self.servos.chan3_raw
         print(average)
+        print("Throttle", self.throttle)
         """ Set PWM autopilot PID """
         if average <= 920 and average > 880:		
             self.cmd_rc([3, self.hover_pwm_val])
