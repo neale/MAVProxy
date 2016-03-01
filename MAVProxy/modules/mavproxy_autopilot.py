@@ -241,7 +241,7 @@ class Autopilotmodule(mp_module.MPModule):
 		socket.close()
 
 	def cmd_ap(self, args):
-		
+		""" Set PWM autopilot PID """
 		if self.depth <= 920 and self.depth > 880:		
 			self.cmd_rc([3, self.hover_pwm_val])
 
