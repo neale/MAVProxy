@@ -254,7 +254,7 @@ class Autopilotmodule(mp_module.MPModule):
 		# Coptor is higher than we want     
 		if sum(self.last_depth)/10 > 900:
 			self.slow_pwm_val = 1300
-			self.cmd_rc([3, pwm_val])
+			self.cmd_rc([3, self.pwm_val])
 			print("Throttling down")
 		#We're right on point       
 		
