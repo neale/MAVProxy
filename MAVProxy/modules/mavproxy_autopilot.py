@@ -1,5 +1,5 @@
 
-import time, os, struct, math, socket, collections
+import time, os, struct, math, socket, collections, threading
 from pymavlink import mavutil
 from MAVProxy.modules.lib import mp_module
 from MAVProxy.modules.lib.mp_settings import MPSetting
@@ -242,6 +242,7 @@ class Autopilotmodule(mp_module.MPModule):
         socket.close()
 
     def cmd_ap(self, args):
+        self.auto = True
         average = sum(self.last_depth)/10
         print(average)
         """ Set PWM autopilot PID """
