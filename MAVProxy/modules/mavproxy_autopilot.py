@@ -77,7 +77,7 @@ class Autopilotmodule(mp_module.MPModule):
         
         if self.auto == True:
             print("test")
-            self.cmd_ap()
+            self.cmd_ap("")
         #self.check_imu_counter += 1
         #if self.check_imu_counter % 100 is 0:
             #print("check_imu_counter:", self.check_imu_counter)
