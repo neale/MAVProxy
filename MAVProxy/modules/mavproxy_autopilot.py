@@ -247,7 +247,7 @@ class Autopilotmodule(mp_module.MPModule):
 
 		# Coptor isn't high enough
 		while sum(self.last_depth)/10 < 900:
-			self.pwm_val = 1600
+			self.pwm_val = 1530
 			self.cmd_rc([3, self.pwm_val])
 
 		# Coptor is higher than we want     
