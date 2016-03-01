@@ -56,7 +56,7 @@ class Autopilotmodule(mp_module.MPModule):
 				self.cmd_sock(9999)
 			try:
 				self.depth = self.sock.recv(14)
-				self.target_altitude = int(self.depth)+3000
+				self.target_altitude = int(round(float(self.depth)))+3000
 				print("depth: ", self.depth)
 
 			except socket.timeout:
@@ -200,18 +200,16 @@ class Autopilotmodule(mp_module.MPModule):
 
 		if type(args) is list:
 			try:
+				if len(args) > 1:
+					print("Usage: socket <portno>")
+					return
 				args = int(args[0])
 				self.port = args
 			except:
 				print("could not convert socket, trying port 9999")
-		else:
-			if len(args) > 1:
-				print("Usage: socket <portno>")
-				return
-			elif not args:
-				self.port = 9999
-			else:
-				self.port = args
+		else:	
+			self.port = 9999
+			
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		try:
 			self.sock.connect(('localhost', self.port))
