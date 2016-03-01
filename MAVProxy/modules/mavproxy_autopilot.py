@@ -249,14 +249,14 @@ class Autopilotmodule(mp_module.MPModule):
             self.cmd_rc([3, self.hover_pwm_val])
             print("Stabilizing")
         # Coptor isn't high enough
-        if average < 900:
-            self.pwm_val = 1530
+        elif average < 900:
+            self.pwm_val = 1560
             self.cmd_rc([3, self.pwm_val])
             print("Throttling up")
 
         # Coptor is higher than we want     
-        if average > 900:
-            self.slow_pwm_val = 1300
+        elif average > 900:
+            self.pwm_val = 1200
             self.cmd_rc([3, self.pwm_val])
             print("Throttling down")
         #We're right on point       
