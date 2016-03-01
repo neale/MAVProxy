@@ -18,6 +18,7 @@ class Autopilotmodule(mp_module.MPModule):
 		self.add_command('open_socket', self.cmd_sock, "connect to socket", ['sockno'])
 		self.add_command('close_socket', self.close_sock, "close socket", ['sockno'])
 		self.add_command('current_depth', self.cmd_depth, "get current object depth") 
+		self.add_command('kill', self.cmd_kill, "sets rc values to 0")
 		# class variables
 		self.sock_option = False
 		self.auto = False
@@ -84,6 +85,8 @@ class Autopilotmodule(mp_module.MPModule):
 				if self.override_counter > 0:
 					self.override_counter -= 1
 
+	def cmd_kill(self, args):
+		self.cmd_rc(["all", 0])
 
 	def set_mode(self, args):
 		'''set arbitrary mode'''
