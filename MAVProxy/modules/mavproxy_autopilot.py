@@ -240,16 +240,16 @@ class Autopilotmodule(mp_module.MPModule):
 		# Coptor isn't high enough
 		if sum(self.last_depth)/10 < 900:
 			fast_pwm_val = 1550
-			self.cmd_rc([1, fast_pwm_val])
+			self.cmd_rc([3, fast_pwm_val])
 
 		# Coptor is higher than we want     
 		elif sum(self.last_depth)/10 > 900:
 			slow_pwm_val = 1350
-			self.cmd_rc([1, slow_pwm_val])
+			self.cmd_rc([3, slow_pwm_val])
 		#We're right on point       
 		else:
 			hover_pwm_val = 1450
-			self.cmd_rc([1, hover_pwm_val])
+			self.cmd_rc([3, hover_pwm_val])
 
 			
 	def SetKp(self, invar):
