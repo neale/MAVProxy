@@ -23,8 +23,8 @@ class Autopilotmodule(mp_module.MPModule):
 		self.sock_option = False
 		self.auto = False
 		self.pwm_val = 1400
-        self.pwm_max = 1800
-        self.pwm_min = 1100
+		self.pwm_max = 1800
+		self.pwm_min = 1100
 		self.hover_pwm_val = 1500
 		self.depth = 0
 		self.last_depth = collections.deque([0]*10, 10) # for summing last ten depth samples
