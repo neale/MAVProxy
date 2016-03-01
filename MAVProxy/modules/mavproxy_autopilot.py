@@ -23,6 +23,8 @@ class Autopilotmodule(mp_module.MPModule):
 		self.sock_option = False
 		self.auto = False
 		self.pwm_val = 1400
+        self.pwm_max = 1800
+        self.pwm_min = 1100
 		self.hover_pwm_val = 1500
 		self.depth = 0
 		self.last_depth = collections.deque([0]*10, 10) # for summing last ten depth samples
@@ -245,12 +247,12 @@ class Autopilotmodule(mp_module.MPModule):
 
 		# Coptor isn't high enough
 		while sum(self.last_depth)/10 < 900:
-			self.pwm_val +=1
+			self.pwm_val = 1600
 			self.cmd_rc([3, self.pwm_val])
 
 		# Coptor is higher than we want     
 		while sum(self.last_depth)/10 > 900:
-			self.slow_pwm_val -= 1
+			self.slow_pwm_val = 1300
 			self.cmd_rc([3, pwm_val])
 		#We're right on point       
 		
