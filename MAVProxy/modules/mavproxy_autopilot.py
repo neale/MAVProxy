@@ -22,6 +22,8 @@ class Autopilotmodule(mp_module.MPModule):
 		# class variables
 		self.sock_option = False
 		self.auto = False
+		self.pwm_val = 1400
+		self.hover_pwm_val = 1500
 		self.depth = 0
 		self.last_depth = collections.deque([0]*10, 10) # for summing last ten depth samples
 		self.override = [ 0 ] * 16
@@ -237,20 +239,21 @@ class Autopilotmodule(mp_module.MPModule):
 		socket.close()
 
 	def cmd_ap(self, args):
+		
+		if self.depth <= 920 and self.depth > 880:		
+			self.cmd_rc([3, self.hover_pwm_val])
+
 		# Coptor isn't high enough
-		if sum(self.last_depth)/10 < 900:
-			fast_pwm_val = 1550
-			self.cmd_rc([3, fast_pwm_val])
+		while sum(self.last_depth)/10 < 900:
+			self.pwm_val +=1
+			self.cmd_rc([3, self.pwm_val])
 
 		# Coptor is higher than we want     
-		elif sum(self.last_depth)/10 > 900:
-			slow_pwm_val = 1350
-			self.cmd_rc([3, slow_pwm_val])
+		while sum(self.last_depth)/10 > 900:
+			self.slow_pwm_val -= 1
+			self.cmd_rc([3, pwm_val])
 		#We're right on point       
-		else:
-			hover_pwm_val = 1450
-			self.cmd_rc([3, hover_pwm_val])
-
+		
 			
 	def SetKp(self, invar):
 		""" Set proportional gain. """
