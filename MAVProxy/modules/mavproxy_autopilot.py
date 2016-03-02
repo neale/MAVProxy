@@ -255,8 +255,8 @@ class Autopilotmodule(mp_module.MPModule):
                 
                 ''' PID Controller for Navigation '''
                 # normalize x_error and y_error
-                self.x_error = (self.x_coord - self.HALF_CAPTURE_WIDTH)/self.HALF_CAPTURE_WIDTH
-                self.y_error = (self.HALF_CAPTURE_HEIGHT - self.y_coord)/self.HALF_CAPTURE_HEIGHT
+                self.x_error = (self.xcenter - self.HALF_CAPTURE_WIDTH)/self.HALF_CAPTURE_WIDTH
+                self.y_error = (self.HALF_CAPTURE_HEIGHT - self.ycenter)/self.HALF_CAPTURE_HEIGHT
                 print 'x_error:     ', self.x_error
                 print 'y_error:     ', self.y_error
 
