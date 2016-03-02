@@ -237,10 +237,10 @@ class Autopilotmodule(mp_module.MPModule):
         self.cmd_rc([3, self.pwm_val])
         #self.override = [0, 0, self.pwm_val, 0,0,0,0,0,0]
         #self.send_rc_override()
-        self.track()
+        #self.track()
         #We're right on point   
             
-    def track(self):
+    """def track(self):
         # determine if target is in frame or not
         self.target_in_frame = True
         if self.target_in_frame == True:
@@ -311,7 +311,7 @@ class Autopilotmodule(mp_module.MPModule):
         self.old_y_error = self.y_error
         self.dt = time.time() - self.t
         self.t = time.time()
-
+    """
     def refresh_imu_data(self):
         ''' checks for existance of imu data'''
         if 'RAW_IMU' in self.status.msgs:
