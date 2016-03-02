@@ -3,15 +3,12 @@ import time, os, struct, math, socket, collections, threading
 from pymavlink import mavutil
 from MAVProxy.modules.lib import mp_module
 from MAVProxy.modules.lib.mp_settings import MPSetting
+from numpy.linalg import inv, det
 
 class Autopilotmodule(mp_module.MPModule):
 
     def __init__(self, mpstate):
-        #initialize gains
-        self.Kp = 0.75
-        self.Kd = 0
-        self.Ki = 0
-        
+      
         super(Autopilotmodule, self).__init__(mpstate, "autopilot", "autopilot command ", public = True)
         self.add_command('autopilot', self.cmd_ap, "Autopilot input control")
         self.add_command('current_imu', self.print_imu, "prints out current IMU data", [ '' ])
@@ -19,19 +16,89 @@ class Autopilotmodule(mp_module.MPModule):
         self.add_command('close_socket', self.close_sock, "close socket", ['sockno'])
         self.add_command('current_depth', self.cmd_depth, "get current object depth") 
         self.add_command('kill', self.cmd_kill, "sets rc values to 0")
-        # class variables
+        self.add_command('get_radius', self_cmd_rad, "prints current distance from circle")
+        
+        # camera parameters
+        self.cam = None
+        self.most_recent = None
+        self.CAPTURE_WIDTH = 628.0
+        self.CAPTURE_HEIGHT = 468.0
+        self.HALF_CAPTURE_WIDTH = self.CAPTURE_WIDTH/2
+        self.HALF_CAPTURE_HEIGHT = self.CAPTURE_HEIGHT/2
+
+        #create cross-correlation templates
+        self.col_temp = ones((self.CAPTURE_HEIGHT,1), uint8) #ROWS by 1 array
+        self.row_temp = ones((1,self.CAPTURE_WIDTH), uint8) #1 by COLS array
+
+        # for keeping track of vision loop speed
+        self.t = 0
+
+        # classifier output
+        self.target_in_frame = False
+        self.last_frames = collections.deque([0]*10, 10)
+        self.frame = 0
+
+        # RC radio data trims
+        self.ch1_trim = 1500
+        self.ch2_trim = 1500
+
+        # hue parameters
+        self.tracking_hue = 'Color 7'
+        self.hue = 7 
+
+        # Initialize PID coefficients
+        self.x_Ap = 0.7
+        self.x_Ai = 0.05
+        self.x_Ad = 0.6
+        self.y_Ap = 0.8
+        self.y_Ai = 0.05
+        self.y_Ad = 0.6
+
+        # initialize errors
+        self.x_error, self.y_error = 0, 0
+        self.old_x_error, self.old_y_error = 0, 0
+
+        # initialize error accumulators
+        self.x_sigma = collections.deque([0,0,0,0], 4)
+        self.y_sigma = collections.deque([0,0,0,0], 4)
+
+        # initialize deltas
+        self.x_delta = 0
+        self.y_delta = 0
+
+        # initialize timer
+        self.t = time()
+        self.dt = 0.5
+
+        # flag for pid first output behavior
+        self.delta_flag = True
+        self.sigma_flag = True
+
+        mpstate = None
+
+        # socket variables
         self.sock_option = False
         self.auto = False
+
+        # set initial PWM values for movement states
         self.pwm_val = 1400
-        self.pwm_max = 1800
-        self.pwm_min = 1100
         self.hover_pwm_val = 1530
+
+        # Depth values from realsense
         self.depth = 0
         self.last_depth = collections.deque([0]*10, 10) # for summing last ten depth samples
+        self.target_altitude, self.depth = 0, 0
+        self.waiting_for_command = True
+
+        # override commands for motors
         self.override = [ 0 ] * 16
         self.last_override = [ 0 ] * 16
         self.override_counter = 0
+
+        # consistant IMU data update
         self.check_imu_counter = 0
+        
+        #AHRS Filtering algorithm variables
         self.recipNorm = 0
         self.beta = 0.1
         self.sampleFreq	= 512.0		# sample frequency in Hz
@@ -44,8 +111,7 @@ class Autopilotmodule(mp_module.MPModule):
         self.qDot1, self.qDot2, self.qDot3, self.qDot4 = 0, 0, 0, 0
         self.hx, self.hy = 0, 0
         self._2q0mx, self._2q0my, self._2q0mz, self._2q1mx, self._2bx, self._2bz, self._4bx, self._4bz, self._2q0, self._2q1, self._2q2, self._2q3, self._2q0q2, self._2q2q3, self.q0q0, self.q0q1, self.q0q2, self.q0q3, self.q1q1, self.q1q2, self.q1q3, self.q2q2, self.q2q3, self.q3q3 = 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-        self.target_altitude, self.depth = 0, 0
-        self.waiting_for_command = True
+        
 
         if self.sitl_output:
             self.override_period = mavutil.periodic_event(20)
@@ -62,6 +128,8 @@ class Autopilotmodule(mp_module.MPModule):
                 self.cmd_sock(9999)
             self.last_depth.appendleft(self.depth)
             self.depth = self.sock.recv(14)
+            self.last_frames.appendleft(self.frame)
+            self.frame = self.frame
             try:
                 self.target_altitude = int((float(self.depth)))+3000
                 self.depth = int(float(self.depth))
@@ -78,9 +146,6 @@ class Autopilotmodule(mp_module.MPModule):
         if self.auto == True:
             print("test")
             self.cmd_ap("")
-        #self.check_imu_counter += 1
-        #if self.check_imu_counter % 100 is 0:
-            #print("check_imu_counter:", self.check_imu_counter)
         if self.override_period.trigger():
             if (self.override != [ 0 ] * 16 or
                 self.override != self.last_override or
@@ -91,7 +156,27 @@ class Autopilotmodule(mp_module.MPModule):
                     self.override_counter -= 1
 
     def cmd_kill(self, args):
-        self.cmd_rc(["all", 0])
+        while 1:
+            self.cmd_rc(["3", 0])
+            self.cmd_disarm('force')
+
+    def cmd_disarm(self, args):
+        '''disarm motors'''
+        p2 = 0
+        if len(args) == 1 and args[0] == 'force':
+            p2 = 21196
+        self.master.mav.command_long_send(
+            self.target_system,  # target_system
+            0,
+            mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, # command
+            0, # confirmation
+            0, # param1 (0 to indicate disarm)
+            p2, # param2 (all other params meaningless)
+            0, # param3
+            0, # param4
+            0, # param5
+            0, # param6
+            0) # param7
 
     def set_mode(self, args):
         '''set arbitrary mode'''
@@ -114,6 +199,119 @@ class Autopilotmodule(mp_module.MPModule):
 
     def cmd_depth(self, args):
         print("center depth: ", self.depth)
+        if 'RC_CHANNELS_RAW' in self.status.msgs:
+            self.servos = self.status.msgs['RC_CHANNELS_RAW']          
+            self.throttle = self.servos.chan3_raw
+            print("Throttle", self.throttle)
+        print("Average Depth: ", sum(self.last_depth)/len(self.last_depth))
+   
+    def cmd_ap(self, args):
+        self.auto = True
+        average = sum(self.last_depth)/10
+       
+        """ Set PWM autopilot PID """
+        if average <= 920 and average > 880:
+            if self.pwm_val is not self.hover_pwm_val:
+                print("Stabilizing")
+                self.pwm_val = self.hover_pwm_val
+
+        # Coptor isn't high enough
+
+        elif average < 900:
+            if self.pwm_val is not 1570:
+                print("Throttling up")
+                self.pwm_val = 1570
+            
+
+        # Coptor is higher than we want     
+        elif average > 900:
+            if self.pwm_val is not 1300:
+                print("Throttling down")
+                self.pwm_val = 1300
+        
+        #self.cmd_rc([3, self.pwm_val])
+        self.override = [0, 0, self.pwm_val, 0,0,0,0,0,0]
+        self.send_rc_override([3, self.pwm_val])
+        self.track()
+        #We're right on point   
+            
+    def track(self):
+        if mpstate.status.flightmode == 'ALT_HOLD':
+            # determine if target is in frame or not
+            if self.last_frames_avg is True:
+                self.target_in_frame = True
+            else:
+                self.target_in_frame = False
+
+            if self.target_in_frame == True:
+                """ Set X and Y coordinates here 
+                self.xcoord = 
+                self.ycoord = 
+                """
+                ''' PID Controller for Navigation '''
+                # normalize x_error and y_error
+                self.x_error = (self.x_coord - self.HALF_CAPTURE_WIDTH)/self.HALF_CAPTURE_WIDTH
+                self.y_error = (self.HALF_CAPTURE_HEIGHT - self.y_coord)/self.HALF_CAPTURE_HEIGHT
+                print 'x_error:     ', self.x_error
+                print 'y_error:     ', self.y_error
+
+                # compute deltas
+                self.x_delta = (self.x_error - self.old_x_error)/self.dt
+                self.y_delta = (self.y_error - self.old_y_error)/self.dt
+                if self.delta_flag == True:    # initial deltas are undefined because dt is undefined
+                    self.x_delta = 0
+                    self.y_delta = 0
+                    self.delta_flag = False    # subsequent deltas are defined
+
+                print 'x_delta:     ', self.x_delta
+                print 'y_delta:     ', self.y_delta
+
+                # update accumulators
+                self.x_sigma.pop()
+                self.x_sigma.appendleft(self.x_error*self.dt)
+                self.y_sigma.pop()
+                self.y_sigma.appendleft(self.y_error*self.dt)
+                if self.sigma_flag == True:    # initial sigmas are undefined because dt is undefined
+                    self.x_sigma = collections.deque([0,0,0,0])
+                    self.y_sigma = collections.deque([0,0,0,0])
+                    self.sigma_flag = False    # subsequent sigmas are defined
+                print 'x_sigma:     ', self.x_sigma
+                print 'y_sigma:     ', self.y_sigma
+
+                # compute pulse
+                self.x_pulse = self.x_Ap * self.x_error + self.x_Ai * sum(self.x_sigma) + self.x_Ad * self.x_delta
+                self.y_pulse = self.y_Ap * self.y_error + self.y_Ai * sum(self.y_sigma) + self.y_Ad * self.y_delta 
+
+                # motor overrides
+                roll_pwm = self.ch1_trim + int(self.x_pulse*50)
+                pitch_pwm = self.ch2_trim - int(self.y_pulse*50)
+                print 'roll_pwm:        ', roll_pwm
+                print 'pitch_pwm:       ', pitch_pwm
+
+                self.override = [roll_pwm,pitch_pwm,0,0,0,0,0,0]
+                send_rc_override()  # start movement
+                sleep(0.3)             # wait
+
+                self.override = [self.ch1_trim, self.ch2_trim,0,0,0,0,0,0]
+                send_rc_override()  # stop brake
+                sleep(0.3)             # wait
+            else:
+                # release to RC radio
+                mpstate.status.override = [0,0,0,0,0,0,0,0]
+                send_motor_override()
+                # reset pid
+                self.x_sigma = collections.deque([0,0,0,0], 4)
+                self.y_sigma = collections.deque([0,0,0,0], 4)
+                self.old_x_error = 0
+                self.old_y_error = 0
+                self.dt = 0.5
+                self.delta_flag = True
+                self.sigma_flag = True
+
+            self.old_x_error = self.x_error
+            self.old_y_error = self.y_error
+            self.dt = time() - self.t
+            self.t = time()
 
     def refresh_imu_data(self):
         ''' checks for existance of imu data'''
@@ -168,9 +366,6 @@ class Autopilotmodule(mp_module.MPModule):
             self.xacc_scaled,
             self.yacc_scaled,
             self.zacc_scaled)
-
-    def calculate_channels(self, magnitude, angle):
-        pass
 
     def cmd_rc(self, args):
         '''handle RC value override'''
@@ -241,81 +436,8 @@ class Autopilotmodule(mp_module.MPModule):
         self.sock_option = False
         socket.close()
 
-    def cmd_ap(self, args):
-        self.auto = True
-        average = sum(self.last_depth)/10
-        if 'RC_CHANNELS_RAW' in self.status.msgs:
-            self.servos = self.status.msgs['RC_CHANNELS_RAW']          
-            self.throttle = self.servos.chan3_raw
-        print(average)
-        print("Throttle", self.throttle)
-        """ Set PWM autopilot PID """
-        if average <= 920 and average > 880:		
-            self.cmd_rc([3, self.hover_pwm_val])
-            print("Stabilizing")
-        # Coptor isn't high enough
-        elif average < 900:
-            self.pwm_val = 1570
-            self.cmd_rc([3, self.pwm_val])
-            print("Throttling up")
+   
 
-        # Coptor is higher than we want     
-        elif average > 900:
-            self.pwm_val = 1300
-            self.cmd_rc([3, self.pwm_val])
-            print("Throttling down")
-        #We're right on point       
-        
-            
-    def SetKp(self, invar):
-        """ Set proportional gain. """
-        self.Kp = invar
-
-    def SetKi(self, invar):
-        """ Set integral gain. """
-        self.Ki = invar
-
-    def SetKd(self, invar):
-        """ Set derivative gain. """
-        self.Kd = invar
-
-    def SetPrevErr(self, preverr):
-        """ Set previous error value. """
-        self.prev_err = preverr
-    
-    def Initialize(self):
-        #initialize delta t vars
-        self.currtm = time.time()
-        self.prevtm = self.currtm
-
-        self.prev_err = 0
-
-        #term result vars
-        self.Cp = 0
-        self.Ci = 0
-        self.Cd = 0
-
-    def GenOut(self, error):
-        """ Performs a PID computation and returns a control value based on
-            the elapsed time (dt) and the error signal from a summing junction
-            (the error parameter).
-        """
-        self.currtm = time.time()               # get t
-        self.dt = self.currtm - self.prevtm          # get delta t
-        self.de = error - self.prev_err              # get delta error
-
-        self.Cp = self.Kp * error               # proportional term
-        self.Ci += error * self.dt                   # integral term
-
-        self.Cd = 0
-        if self.dt > 0:                              # no div by zero
-            self.Cd = self.de/self.dt                     # derivative term
-
-        self.prevtm = self.currtm               # save t for next pass
-        self.prev_err = error                   # save t-1 error
-
-        # sum the terms and return the result
-        return self.Cp + (self.Ki * self.Ci) + (self.Kd * self.Cd)
     def AHRSUpdate(self, gx, gy, gz, ax, ay, az, mx, my, mz):
     
     # Use IMU algorithm if magnetometer measurement invalid (avoids NaN in magnetometer normalisation)
@@ -468,7 +590,9 @@ class Autopilotmodule(mp_module.MPModule):
         self.q2 *= self.recipNorm
         self.q3 *= self.recipNorm
 
-
+    def name():
+        '''return module name'''
+        return "Autopilot"
 
 def init(mpstate):
     '''initialise module'''
