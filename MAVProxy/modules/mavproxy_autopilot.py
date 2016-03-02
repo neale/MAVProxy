@@ -130,8 +130,12 @@ class Autopilotmodule(mp_module.MPModule):
             self.last_frames.appendleft(self.frame)
             self.frame = self.frame
             try:
-                self.target_altitude = int((float(self.depth)))+3000
-                self.depth = int(float(self.depth))
+                data_string = self.depth.split(',')
+                print("data string: ", data_string)
+                data_string[0] = self.depth
+                data_string[1] = self.xcenter
+                data_string[2] = self.ycenter 
+                self.depth = int(self.depth)
                 
             except ValueError:
                 pass
