@@ -118,7 +118,6 @@ class Autopilotmodule(mp_module.MPModule):
         else:
             self.override_period = mavutil.periodic_event(1)
     
-        self.Initialize()
                 
     def idle_task(self):
         
