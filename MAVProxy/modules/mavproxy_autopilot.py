@@ -292,7 +292,7 @@ class Autopilotmodule(mp_module.MPModule):
             time.sleep(0.1)             # wait
 
             self.override = [self.ch1_trim, self.ch2_trim,0,0,0,0,0,0]
-            send_rc_override()  # stop brake
+            self.send_rc_override()  # stop brake
             time.sleep(0.1)             # wait
         else:
             # release to RC radio
