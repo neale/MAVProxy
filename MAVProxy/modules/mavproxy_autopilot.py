@@ -242,11 +242,7 @@ class Autopilotmodule(mp_module.MPModule):
             
     def track(self):
         # determine if target is in frame or not
-        if self.last_frames is True:
-            self.target_in_frame = True
-        else:
-            self.target_in_frame = False
-
+        self.target_in_frame = True
         if self.target_in_frame == True:
             self.xenter = self.xcenter
             self.ycenter = self.ycenter
