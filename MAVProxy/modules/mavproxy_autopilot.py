@@ -4,7 +4,7 @@ from pymavlink import mavutil
 from MAVProxy.modules.lib import mp_module
 from MAVProxy.modules.lib.mp_settings import MPSetting
 from numpy.linalg import inv, det
-
+import numpy as np
 class Autopilotmodule(mp_module.MPModule):
 
     def __init__(self, mpstate):
@@ -27,8 +27,8 @@ class Autopilotmodule(mp_module.MPModule):
         self.HALF_CAPTURE_HEIGHT = self.CAPTURE_HEIGHT/2
 
         #create cross-correlation templates
-        self.col_temp = ones((self.CAPTURE_HEIGHT,1), uint8) #ROWS by 1 array
-        self.row_temp = ones((1,self.CAPTURE_WIDTH), uint8) #1 by COLS array
+        self.col_temp = np.ones((self.CAPTURE_HEIGHT,1), np.uint8) #ROWS by 1 array
+        self.row_temp = np.ones((1,self.CAPTURE_WIDTH), np.uint8) #1 by COLS array
 
         # for keeping track of vision loop speed
         self.t = 0
