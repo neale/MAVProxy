@@ -57,6 +57,8 @@ class Autopilotmodule(mp_module.MPModule):
         # initialize errors
         self.x_error, self.y_error = 0, 0
         self.old_x_error, self.old_y_error = 0, 0
+        self.xcenter = 0
+        self.ycenter = 0
 
         # initialize error accumulators
         self.x_sigma = collections.deque([0,0,0,0], 4)
@@ -133,7 +135,7 @@ class Autopilotmodule(mp_module.MPModule):
                 data_string = self.depth.split(',')
                 self.depth   = int(data_string[0])
                 self.xcenter = int(data_string[1])
-                self.ycenter = int(data_string[2])
+                self.ycenter = int(''.join([i for i in data_string[2] if str.isdigit(i)]))
                 self.depth   = int(self.depth)
                 
             except ValueError:
