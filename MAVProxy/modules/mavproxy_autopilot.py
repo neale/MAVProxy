@@ -302,7 +302,7 @@ class Autopilotmodule(mp_module.MPModule):
         else:
             # release to RC radio
             self.override = [0,0,0,0,0,0,0,0]
-            send_motor_override()
+            self.send_motor_override()
             # reset pid
             self.x_sigma = collections.deque([0,0,0,0], 4)
             self.y_sigma = collections.deque([0,0,0,0], 4)
