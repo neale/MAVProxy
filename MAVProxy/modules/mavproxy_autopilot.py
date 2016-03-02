@@ -206,8 +206,8 @@ class Autopilotmodule(mp_module.MPModule):
             self.throttle = self.servos.chan3_raw
             print("Throttle", self.throttle)
         print("Average Depth: ", sum(self.last_depth)/len(self.last_depth))
-        print("X center: ", self.x_center)
-        print("Y_center: ", self.y_center)
+        print("X center: ", self.xcenter)
+        print("Y_center: ", self.ycenter)
    
     def cmd_ap(self, args):
         self.auto = True
@@ -248,8 +248,8 @@ class Autopilotmodule(mp_module.MPModule):
                 self.target_in_frame = False
 
             if self.target_in_frame == True:
-                self.xcoord = self.xcenter
-                self.ycoord = self.ycenter
+                self.xenter = self.xcenter
+                self.ycenter = self.ycenter
                 
                 ''' PID Controller for Navigation '''
                 # normalize x_error and y_error
