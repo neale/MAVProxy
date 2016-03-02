@@ -148,7 +148,6 @@ class Autopilotmodule(mp_module.MPModule):
                 pass
         
         if self.auto == True:
-            print("test")
             self.cmd_ap("")
         if self.override_period.trigger():
             if (self.override != [ 0 ] * 16 or
@@ -224,7 +223,7 @@ class Autopilotmodule(mp_module.MPModule):
         # Coptor isn't high enough
 
         elif average < 900:
-            if self.pwm_val is not 1570:
+            if self.pwm_val is not 1580:
                 print("Throttling up")
                 self.pwm_val = 1570
             
@@ -256,8 +255,8 @@ class Autopilotmodule(mp_module.MPModule):
             # normalize x_error and y_error
             self.x_error = (self.xcenter - self.HALF_CAPTURE_WIDTH)/self.HALF_CAPTURE_WIDTH
             self.y_error = (self.HALF_CAPTURE_HEIGHT - self.ycenter)/self.HALF_CAPTURE_HEIGHT
-            print 'x_error:     ', self.x_error
-            print 'y_error:     ', self.y_error
+            print('x_error:     ', self.x_error)
+            print ('y_error:     ', self.y_error)
 
             # compute deltas
             self.x_delta = (self.x_error - self.old_x_error)/self.dt
@@ -267,8 +266,8 @@ class Autopilotmodule(mp_module.MPModule):
                 self.y_delta = 0
                 self.delta_flag = False    # subsequent deltas are defined
 
-            print 'x_delta:     ', self.x_delta
-            print 'y_delta:     ', self.y_delta
+            print ('x_delta:     ', self.x_delta)
+            print ('y_delta:     ', self.y_delta)
 
             # update accumulators
             self.x_sigma.pop()
@@ -289,8 +288,8 @@ class Autopilotmodule(mp_module.MPModule):
             # motor overrides
             roll_pwm = self.ch1_trim + int(self.x_pulse*50)
             pitch_pwm = self.ch2_trim - int(self.y_pulse*50)
-            print 'updated roll_pwm:        ', roll_pwm
-            print 'updated pitch_pwm:       ', pitch_pwm
+            print('updated roll_pwm:        ', roll_pwm)
+            print('updated pitch_pwm:       ', pitch_pwm)
 
             self.override = [roll_pwm,pitch_pwm,0,0,0,0,0,0]
             self.send_rc_override()  # start movement
