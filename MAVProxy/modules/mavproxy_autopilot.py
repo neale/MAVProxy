@@ -132,10 +132,10 @@ class Autopilotmodule(mp_module.MPModule):
             try:
                 data_string = self.depth.split(',')
                 print("data string: ", data_string)
-                data_string[0] = self.depth
-                data_string[1] = self.xcenter
-                data_string[2] = self.ycenter 
-                self.depth = int(self.depth)
+                self.depth   = data_string[0] 
+                self.xcenter = data_string[1] 
+                self.ycenter = data_string[2]  
+                self.depth   = int(self.depth)
                 
             except ValueError:
                 pass
