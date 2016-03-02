@@ -131,10 +131,9 @@ class Autopilotmodule(mp_module.MPModule):
             self.frame = self.frame
             try:
                 data_string = self.depth.split(',')
-                print("data string: ", data_string)
-                self.depth   = data_string[0] 
-                self.xcenter = data_string[1] 
-                self.ycenter = data_string[2]  
+                self.depth   = int(data_string[0])
+                self.xcenter = int(data_string[1])
+                self.ycenter = int(data_string[2])
                 self.depth   = int(self.depth)
                 
             except ValueError:
@@ -207,6 +206,8 @@ class Autopilotmodule(mp_module.MPModule):
             self.throttle = self.servos.chan3_raw
             print("Throttle", self.throttle)
         print("Average Depth: ", sum(self.last_depth)/len(self.last_depth))
+        print("X center: ", self.x_center)
+        print("Y_center: ", self.y_center)
    
     def cmd_ap(self, args):
         self.auto = True
@@ -247,10 +248,10 @@ class Autopilotmodule(mp_module.MPModule):
                 self.target_in_frame = False
 
             if self.target_in_frame == True:
-                """ Set X and Y coordinates here 
-                self.xcoord = 
-                self.ycoord = 
-                """
+                 Set X and Y coordinates here 
+                self.xcoord = self.xcenter
+                self.ycoord = self.ycenter
+                
                 ''' PID Controller for Navigation '''
                 # normalize x_error and y_error
                 self.x_error = (self.x_coord - self.HALF_CAPTURE_WIDTH)/self.HALF_CAPTURE_WIDTH
