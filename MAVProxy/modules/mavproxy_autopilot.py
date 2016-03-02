@@ -16,7 +16,7 @@ class Autopilotmodule(mp_module.MPModule):
         self.add_command('close_socket', self.close_sock, "close socket", ['sockno'])
         self.add_command('current_depth', self.cmd_depth, "get current object depth") 
         self.add_command('kill', self.cmd_kill, "sets rc values to 0")
-        self.add_command('get_radius', self_cmd_rad, "prints current distance from circle")
+        #self.add_command('get_radius', self_cmd_rad, "prints current distance from circle")
         
         # camera parameters
         self.cam = None
