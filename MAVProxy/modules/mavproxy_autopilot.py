@@ -261,7 +261,7 @@ class Autopilotmodule(mp_module.MPModule):
 
         # Coptor is higher than we want     
         elif average > 900:
-            self.pwm_val = 1400
+            self.pwm_val = 1300
             self.cmd_rc([3, self.pwm_val])
             print("Throttling down")
         #We're right on point       
