@@ -293,7 +293,7 @@ class Autopilotmodule(mp_module.MPModule):
             print 'updated pitch_pwm:       ', pitch_pwm
 
             self.override = [roll_pwm,pitch_pwm,0,0,0,0,0,0]
-            send_rc_override()  # start movement
+            self.send_rc_override()  # start movement
             sleep(0.3)             # wait
 
             self.override = [self.ch1_trim, self.ch2_trim,0,0,0,0,0,0]
