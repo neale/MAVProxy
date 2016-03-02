@@ -67,7 +67,7 @@ class Autopilotmodule(mp_module.MPModule):
         self.y_delta = 0
 
         # initialize timer
-        self.t = time()
+        self.t = time.time()
         self.dt = 0.5
 
         # flag for pid first output behavior
