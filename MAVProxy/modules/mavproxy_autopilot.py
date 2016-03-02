@@ -248,7 +248,6 @@ class Autopilotmodule(mp_module.MPModule):
                 self.target_in_frame = False
 
             if self.target_in_frame == True:
-                 Set X and Y coordinates here 
                 self.xcoord = self.xcenter
                 self.ycoord = self.ycenter
                 
