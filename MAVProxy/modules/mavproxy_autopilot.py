@@ -237,7 +237,7 @@ class Autopilotmodule(mp_module.MPModule):
         
         #self.cmd_rc([3, self.pwm_val])
         self.override = [0, 0, self.pwm_val, 0,0,0,0,0,0]
-        self.send_rc_override([3, self.pwm_val])
+        self.send_rc_override()
         self.track()
         #We're right on point   
             
