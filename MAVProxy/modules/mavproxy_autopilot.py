@@ -242,81 +242,80 @@ class Autopilotmodule(mp_module.MPModule):
         #We're right on point   
             
     def track(self):
-        if mpstate.status.flightmode == 'ALT_HOLD':
-            # determine if target is in frame or not
-            if self.last_frames_avg is True:
-                self.target_in_frame = True
-            else:
-                self.target_in_frame = False
+        # determine if target is in frame or not
+        if self.last_frames_avg is True:
+            self.target_in_frame = True
+        else:
+            self.target_in_frame = False
 
-            if self.target_in_frame == True:
-                self.xenter = self.xcenter
-                self.ycenter = self.ycenter
+        if self.target_in_frame == True:
+            self.xenter = self.xcenter
+            self.ycenter = self.ycenter
                 
-                ''' PID Controller for Navigation '''
-                # normalize x_error and y_error
-                self.x_error = (self.xcenter - self.HALF_CAPTURE_WIDTH)/self.HALF_CAPTURE_WIDTH
-                self.y_error = (self.HALF_CAPTURE_HEIGHT - self.ycenter)/self.HALF_CAPTURE_HEIGHT
-                print 'x_error:     ', self.x_error
-                print 'y_error:     ', self.y_error
+            ''' PID Controller for Navigation '''
+            # normalize x_error and y_error
+            self.x_error = (self.xcenter - self.HALF_CAPTURE_WIDTH)/self.HALF_CAPTURE_WIDTH
+            self.y_error = (self.HALF_CAPTURE_HEIGHT - self.ycenter)/self.HALF_CAPTURE_HEIGHT
+            print 'x_error:     ', self.x_error
+            print 'y_error:     ', self.y_error
 
-                # compute deltas
-                self.x_delta = (self.x_error - self.old_x_error)/self.dt
-                self.y_delta = (self.y_error - self.old_y_error)/self.dt
-                if self.delta_flag == True:    # initial deltas are undefined because dt is undefined
-                    self.x_delta = 0
-                    self.y_delta = 0
-                    self.delta_flag = False    # subsequent deltas are defined
+            # compute deltas
+            self.x_delta = (self.x_error - self.old_x_error)/self.dt
+            self.y_delta = (self.y_error - self.old_y_error)/self.dt
+            if self.delta_flag == True:    # initial deltas are undefined because dt is undefined
+                self.x_delta = 0
+                self.y_delta = 0
+                self.delta_flag = False    # subsequent deltas are defined
 
-                print 'x_delta:     ', self.x_delta
-                print 'y_delta:     ', self.y_delta
+            print 'x_delta:     ', self.x_delta
+            print 'y_delta:     ', self.y_delta
 
-                # update accumulators
-                self.x_sigma.pop()
-                self.x_sigma.appendleft(self.x_error*self.dt)
-                self.y_sigma.pop()
-                self.y_sigma.appendleft(self.y_error*self.dt)
-                if self.sigma_flag == True:    # initial sigmas are undefined because dt is undefined
-                    self.x_sigma = collections.deque([0,0,0,0])
-                    self.y_sigma = collections.deque([0,0,0,0])
-                    self.sigma_flag = False    # subsequent sigmas are defined
-                print 'x_sigma:     ', self.x_sigma
-                print 'y_sigma:     ', self.y_sigma
+            # update accumulators
+            self.x_sigma.pop()
+            self.x_sigma.appendleft(self.x_error*self.dt)
+            self.y_sigma.pop()
+            self.y_sigma.appendleft(self.y_error*self.dt)
+            if self.sigma_flag == True:    # initial sigmas are undefined because dt is undefined
+                self.x_sigma = collections.deque([0,0,0,0])
+                self.y_sigma = collections.deque([0,0,0,0])
+                self.sigma_flag = False    # subsequent sigmas are defined
+            #print 'x_sigma:     ', self.x_sigma
+            #print 'y_sigma:     ', self.y_sigma
 
-                # compute pulse
-                self.x_pulse = self.x_Ap * self.x_error + self.x_Ai * sum(self.x_sigma) + self.x_Ad * self.x_delta
-                self.y_pulse = self.y_Ap * self.y_error + self.y_Ai * sum(self.y_sigma) + self.y_Ad * self.y_delta 
+            # compute pulse
+            self.x_pulse = self.x_Ap * self.x_error + self.x_Ai * sum(self.x_sigma) + self.x_Ad * self.x_delta
+            self.y_pulse = self.y_Ap * self.y_error + self.y_Ai * sum(self.y_sigma) + self.y_Ad * self.y_delta 
 
-                # motor overrides
-                roll_pwm = self.ch1_trim + int(self.x_pulse*50)
-                pitch_pwm = self.ch2_trim - int(self.y_pulse*50)
-                print 'roll_pwm:        ', roll_pwm
-                print 'pitch_pwm:       ', pitch_pwm
+            # motor overrides
+            roll_pwm = self.ch1_trim + int(self.x_pulse*50)
+            pitch_pwm = self.ch2_trim - int(self.y_pulse*50)
+            print 'updated roll_pwm:        ', roll_pwm
+            print 'updated pitch_pwm:       ', pitch_pwm
 
-                self.override = [roll_pwm,pitch_pwm,0,0,0,0,0,0]
-                send_rc_override()  # start movement
-                sleep(0.3)             # wait
+            self.override = [roll_pwm,pitch_pwm,0,0,0,0,0,0]
+            send_rc_override()  # start movement
+            sleep(0.3)             # wait
 
-                self.override = [self.ch1_trim, self.ch2_trim,0,0,0,0,0,0]
-                send_rc_override()  # stop brake
-                sleep(0.3)             # wait
-            else:
-                # release to RC radio
-                mpstate.status.override = [0,0,0,0,0,0,0,0]
-                send_motor_override()
-                # reset pid
-                self.x_sigma = collections.deque([0,0,0,0], 4)
-                self.y_sigma = collections.deque([0,0,0,0], 4)
-                self.old_x_error = 0
-                self.old_y_error = 0
-                self.dt = 0.5
-                self.delta_flag = True
-                self.sigma_flag = True
+            self.override = [self.ch1_trim, self.ch2_trim,0,0,0,0,0,0]
+            send_rc_override()  # stop brake
+            sleep(0.3)             # wait
+        else:
+            # release to RC radio
+            self.override = [0,0,0,0,0,0,0,0]
+            send_motor_override()
+            # reset pid
+            self.x_sigma = collections.deque([0,0,0,0], 4)
+            self.y_sigma = collections.deque([0,0,0,0], 4)
+            self.old_x_error = 0
+            self.old_y_error = 0
+            self.dt = 0.5
+            self.delta_flag = True
+            self.sigma_flag = True
 
-            self.old_x_error = self.x_error
-            self.old_y_error = self.y_error
-            self.dt = time() - self.t
-            self.t = time()
+        self.old_x_error = self.x_error
+        self.old_y_error = self.y_error
+        self.dt = time() - self.t
+        self.t = time()
 
     def refresh_imu_data(self):
         ''' checks for existance of imu data'''
