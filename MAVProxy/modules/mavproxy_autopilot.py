@@ -293,11 +293,11 @@ class Autopilotmodule(mp_module.MPModule):
 
             self.override = [roll_pwm,pitch_pwm,0,0,0,0,0,0]
             self.send_rc_override()  # start movement
-            sleep(0.3)             # wait
+            sleep(0.1)             # wait
 
             self.override = [self.ch1_trim, self.ch2_trim,0,0,0,0,0,0]
             send_rc_override()  # stop brake
-            sleep(0.3)             # wait
+            sleep(0.1)             # wait
         else:
             # release to RC radio
             #self.override = [0,0,0,0,0,0,0,0]
