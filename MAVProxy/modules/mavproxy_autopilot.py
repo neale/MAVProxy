@@ -314,8 +314,8 @@ class Autopilotmodule(mp_module.MPModule):
 
         self.old_x_error = self.x_error
         self.old_y_error = self.y_error
-        self.dt = time() - self.t
-        self.t = time()
+        self.dt = time.time() - self.t
+        self.t = time.time()
 
     def refresh_imu_data(self):
         ''' checks for existance of imu data'''
