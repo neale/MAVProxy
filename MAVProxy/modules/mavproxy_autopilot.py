@@ -21,8 +21,8 @@ class Autopilotmodule(mp_module.MPModule):
         # camera parameters
         self.cam = None
         self.most_recent = None
-        self.CAPTURE_WIDTH = 628.0
-        self.CAPTURE_HEIGHT = 468.0
+        self.CAPTURE_WIDTH = 640.0
+        self.CAPTURE_HEIGHT = 480.0
         self.HALF_CAPTURE_WIDTH = self.CAPTURE_WIDTH/2
         self.HALF_CAPTURE_HEIGHT = self.CAPTURE_HEIGHT/2
 
@@ -240,7 +240,7 @@ class Autopilotmodule(mp_module.MPModule):
         #self.track()
         #We're right on point   
             
-    """def track(self):
+    def track(self):
         # determine if target is in frame or not
         self.target_in_frame = True
         if self.target_in_frame == True:
@@ -311,7 +311,7 @@ class Autopilotmodule(mp_module.MPModule):
         self.old_y_error = self.y_error
         self.dt = time.time() - self.t
         self.t = time.time()
-    """
+    
     def refresh_imu_data(self):
         ''' checks for existance of imu data'''
         if 'RAW_IMU' in self.status.msgs:
