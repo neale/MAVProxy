@@ -708,6 +708,7 @@ def periodic_tasks():
         if m.needs_unloading:
             unload_module(m.name)
 
+''' Main loop of the program ''''
 def main_loop():
     '''main processing loop'''
     if not mpstate.status.setup_mode and not opts.nowait:
@@ -722,7 +723,7 @@ def main_loop():
         if mpstate is None or mpstate.status.exit:
             return
         while not mpstate.input_queue.empty():
-            line = mpstate.input_queue.get()
+            lined = mpstate.input_queue.get()
             mpstate.input_count += 1
             cmds = line.split(';')
             if len(cmds) == 1 and cmds[0] == "":
@@ -798,7 +799,8 @@ def main_loop():
                     mpstate.select_extra.pop(fd)
 
 
-
+''' Infinite Main Thread of the program '''
+''' Other main loop found at main_loop() '''
 def input_loop():
     '''wait for user input'''
     while mpstate.status.exit != True:
@@ -809,6 +811,24 @@ def input_loop():
             mpstate.status.exit = True
             sys.exit(1)
         mpstate.input_queue.put(line)
+
+def open_socket(args):
+    sock_option = True
+    print("attemping connection to vision system")
+    port = 9999
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.connect(('localhost', port))
+    except socket.error:
+        print("socket not availible")
+    socket.timeout(0.1)
+    print("connecting to socket: ", port)
+    time.sleep(0.2)
+
+def close_sock():
+
+    self.sock_option = False
+    socket.close()
 
 
 def run_script(scriptfile):
@@ -888,7 +908,7 @@ if __name__ == '__main__':
     parser.add_option("--profile", action='store_true', help="run the Yappi python profiler")
     parser.add_option("--state-basedir", default=None, help="base directory for logs and aircraft directories")
     parser.add_option("--version", action='store_true', help="version information")
-    parser.add_option("--default-modules", default="log,signing,wp,rally,fence,param,relay,tuneopt,arm,mode,calibration,rc,auxopt,misc,cmdlong,battery,terrain,output", help='default module list')
+    parser.add_option("--default-modules", default="autopilot,log,signing,param,tuneopt,arm,mode,calibration,rc,auxopt,misc,cmdlong,battery,terrain,output", help='default module list')
 
     (opts, args) = parser.parse_args()
 
@@ -1056,6 +1076,8 @@ if __name__ == '__main__':
     mpstate.status.thread.daemon = True
     mpstate.status.thread.start()
 
+    # open socket to port 9999 to import vision data
+    open_socket()
     # use main program for input. This ensures the terminal cleans
     # up on exit
     while (mpstate.status.exit != True):

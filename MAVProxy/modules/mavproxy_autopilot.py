@@ -8,7 +8,7 @@ import numpy as np
 class Autopilotmodule(mp_module.MPModule):
 
     def __init__(self, mpstate):
-      
+
         super(Autopilotmodule, self).__init__(mpstate, "autopilot", "autopilot command ", public = True)
         self.add_command('autopilot', self.cmd_ap, "Autopilot input control")
         self.add_command('current_imu', self.print_imu, "prints out current IMU data", [ '' ])
@@ -16,8 +16,7 @@ class Autopilotmodule(mp_module.MPModule):
         self.add_command('close_socket', self.close_sock, "close socket", ['sockno'])
         self.add_command('current_depth', self.cmd_depth, "get current object depth") 
         self.add_command('kill', self.cmd_kill, "sets rc values to 0")
-        #self.add_command('get_radius', self_cmd_rad, "prints current distance from circle")
-        
+
         # camera parameters
         self.cam = None
         self.most_recent = None
@@ -41,10 +40,6 @@ class Autopilotmodule(mp_module.MPModule):
         # RC radio data trims
         self.ch1_trim = 1500
         self.ch2_trim = 1500
-
-        # hue parameters
-        self.tracking_hue = 'Color 7'
-        self.hue = 7 
 
         # Initialize PID coefficients
         self.x_Ap = 0.7
@@ -99,14 +94,14 @@ class Autopilotmodule(mp_module.MPModule):
 
         # consistant IMU data update
         self.check_imu_counter = 0
-        
+
         #AHRS Filtering algorithm variables
         self.recipNorm = 0
         self.beta = 0.1
         self.sampleFreq	= 512.0		# sample frequency in Hz
         self.q0 = 1.0
-        self.q1 = 0.0 
-        self.q2 = 0.0 
+        self.q1 = 0.0
+        self.q2 = 0.0
         self.q3 = 0.0	# quaternion of sensor frame relative to auxiliary frame
         self.port = 0
         self.s0, self.s1, self.s2, self.s3 = 0, 0, 0, 0
@@ -119,10 +114,10 @@ class Autopilotmodule(mp_module.MPModule):
             self.override_period = mavutil.periodic_event(20)
         else:
             self.override_period = mavutil.periodic_event(1)
-    
-                
+
+
     def idle_task(self):
-        
+
         self.refresh_imu_data()
         if self.sock_option == True:
             if self.port is 0:
@@ -137,16 +132,15 @@ class Autopilotmodule(mp_module.MPModule):
                 self.xcenter = int(data_string[1])
                 self.ycenter = int(''.join([i for i in data_string[2] if str.isdigit(i)]))
                 self.depth   = int(self.depth)
-                
+
             except ValueError:
                 pass
             except socket.timeout:
                 socket.close()
                 self.sock_option = False
             except socket.error:
-
                 pass
-        
+
         if self.auto == True:
             self.cmd_ap("")
         if self.override_period.trigger():
@@ -209,11 +203,11 @@ class Autopilotmodule(mp_module.MPModule):
         print("Average Depth: ", sum(self.last_depth)/len(self.last_depth))
         print("X center: ", self.xcenter)
         print("Y_center: ", self.ycenter)
-   
+
     def cmd_ap(self, args):
         self.auto = True
         average = sum(self.last_depth)/10
-       
+
         """ Set PWM autopilot PID """
         if average <= 920 and average > 880:
             if self.pwm_val is not self.hover_pwm_val:
@@ -226,27 +220,27 @@ class Autopilotmodule(mp_module.MPModule):
             if self.pwm_val is not 1580:
                 print("Throttling up")
                 self.pwm_val = 1570
-            
+
 
         # Coptor is higher than we want     
         elif average > 900:
             if self.pwm_val is not 1300:
                 print("Throttling down")
                 self.pwm_val = 1300
-        
+
         self.cmd_rc([3, self.pwm_val])
         #self.override = [0, 0, self.pwm_val, 0,0,0,0,0,0]
         #self.send_rc_override()
         #self.track()
         #We're right on point   
-            
-    """def track(self):
+
+    def track(self):
         # determine if target is in frame or not
         self.target_in_frame = True
         if self.target_in_frame == True:
             self.xenter = self.xcenter
             self.ycenter = self.ycenter
-                
+
             ''' PID Controller for Navigation '''
             # normalize x_error and y_error
             self.x_error = (self.xcenter - self.HALF_CAPTURE_WIDTH)/self.HALF_CAPTURE_WIDTH
@@ -311,7 +305,7 @@ class Autopilotmodule(mp_module.MPModule):
         self.old_y_error = self.y_error
         self.dt = time.time() - self.t
         self.t = time.time()
-    """
+
     def refresh_imu_data(self):
         ''' checks for existance of imu data'''
         if 'RAW_IMU' in self.status.msgs:
@@ -342,8 +336,7 @@ class Autopilotmodule(mp_module.MPModule):
         """self.AHRSUpdate(self.xgyro_raw, self.ygyro_raw, self.zgyro_raw,
                         self.xacc_raw, self.yacc_raw, self.zacc_raw,
                         self.xmag_raw, self.ymag_raw, self.zmag_raw)"""
-         
-    
+
     def print_imu(self, args):
         print (
             self.xgyro_raw,
@@ -405,7 +398,7 @@ class Autopilotmodule(mp_module.MPModule):
             self.master.mav.rc_channels_override_send(self.target_system,
                                                            self.target_component,
                                                            *chan8)
-    
+
     def cmd_sock(self, args):
         self.sock_option = True
         print("attemping connection to ", args) 
@@ -419,9 +412,9 @@ class Autopilotmodule(mp_module.MPModule):
                 self.port = args
             except:
                 print("could not convert socket, trying port 9999")
-        else:	
+        else:
             self.port = 9999
-            
+
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             self.sock.connect(('localhost', self.port))
@@ -435,10 +428,10 @@ class Autopilotmodule(mp_module.MPModule):
         self.sock_option = False
         socket.close()
 
-   
+
 
     def AHRSUpdate(self, gx, gy, gz, ax, ay, az, mx, my, mz):
-    
+
     # Use IMU algorithm if magnetometer measurement invalid (avoids NaN in magnetometer normalisation)
         if((mx == 0.0) and (my == 0.0) and (mz == 0.0)):
             self.IMU_update(gx, gy, gz, ax, ay, az)
