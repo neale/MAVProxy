@@ -812,7 +812,7 @@ def input_loop():
             sys.exit(1)
         mpstate.input_queue.put(line)
 
-def open_socket(args):
+def open_socket():
     sock_option = True
     print("attemping connection to vision system")
     port = 9999
