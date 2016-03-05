@@ -708,7 +708,7 @@ def periodic_tasks():
         if m.needs_unloading:
             unload_module(m.name)
 
-''' Main loop of the program ''''
+''' Main loop of the program '''
 def main_loop():
     '''main processing loop'''
     if not mpstate.status.setup_mode and not opts.nowait:
