@@ -17,7 +17,7 @@ from MAVProxy.modules.lib.mp_menu import *
 
 class ConsoleModule(mp_module.MPModule):
     def __init__(self, mpstate):
-        super(ConsoleModule, self).__init__(mpstate, "console", "GUI console", public=True)
+        super(ConsoleModule, self).__init__(mpstate, "console", "GUI console")
         self.in_air = False
         self.start_time = 0.0
         self.total_time = 0.0
