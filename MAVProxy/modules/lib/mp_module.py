@@ -4,7 +4,7 @@ class MPModule(object):
     The base class for all modules
     '''
 
-    def __init__(self, mpstate, name, description=None, public=False):
+    def __init__(self, mpstate, name, description=None,):
         '''
         Constructor
 
@@ -18,8 +18,7 @@ class MPModule(object):
             self.description = name + " handling"
         else:
             self.description = description
-        if public:
-            mpstate.public_modules[name] = self
+
 
     #
     # Overridable hooks follow...
