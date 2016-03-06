@@ -119,6 +119,7 @@ class MPStatus(object):
         self.x_center, self.last_x_center = 0, 0
         self.y_center, self.last_y_center = 0, 0
         self.current_depth = 0
+        self.sock = 0
         self.depth_stream = collections.deque([0]*5, 5)
         self.counters = {'MasterIn' : [], 'MasterOut' : 0, 'FGearIn' : 0, 'FGearOut' : 0, 'Slave' : 0}
         self.wp_op = None
@@ -1154,31 +1155,25 @@ def send_heartbeat(master):
         master.mav.heartbeat_send(MAV_GROUND, MAV_AUTOPILOT_NONE)
 
 def open_socket():
-    sock_option = True
     print("attemping connection to vision system")
     port = 9999
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    mpstate.status.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
-        sock.connect(('localhost', port))
+        mpstate.status.sock.connect(('localhost', port))
     except socket.error:
         print("socket not availible")
     socket.timeout(0.1)
     print("connecting to socket: ", port)
     time.sleep(0.2)
 
-def close_sock():
-
-    self.sock_option = False
-    socket.close()
-
 def get_vision_data():
-    self.sock_stream = self.sock.recv(14)
+    sock_stream = mpstate.status.sock.recv(14)
     try:
-        data_string = self.sock_stream.split(',')
-        self.current_depth  = int(data_string[0])
-        self.xcenter        = int(data_string[1])
-        self.ycenter        = int(''.join([i for i in data_string[2] if str.isdigit(i)]))
-        self.depth_stream.appendleft(self.current_depth)
+        data_string = sock_stream.split(',')
+        mpstate.status.current_depth  = int(data_string[0])
+        mpstate.status.xcenter        = int(data_string[1])
+        mpstate.status.ycenter        = int(''.join([i for i in data_string[2] if str.isdigit(i)]))
+        mpstate.status.depth_stream.appendleft(mpstate.status.current_depth)
     except:
         print("could not convert network data")
 
@@ -1575,5 +1570,5 @@ if __name__ == '__main__':
         if hasattr(m, 'unload'):
             print("Unloading module %s" % m.name)
             m.unload()
-        
+    socket.close()
     sys.exit(1)
