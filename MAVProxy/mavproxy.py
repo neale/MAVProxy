@@ -186,9 +186,9 @@ class MPState(object):
         self.modules = []
         self.mav_param_count = 0
         self.mav_param_set = set()
+        self.functions = MAVFunctions()
         self.functions.say = say
         self.functions.process_stdin = process_stdin
-        self.functions = MAVFunctions()
         self.select_extra = {}
         self.continue_mode = False
         self.aliases = {}
