@@ -1406,7 +1406,6 @@ if __name__ == '__main__':
     parser.add_option("--profile", action='store_true', help="run the Yappi python profiler")
     parser.add_option("--state-basedir", default=None, help="base directory for logs and aircraft directories")
     parser.add_option("--version", action='store_true', help="version information")
-    parser.add_option("--default-modules", default="autopilot,setref", help='default module list')
 
     (opts, args) = parser.parse_args()
 
@@ -1485,15 +1484,9 @@ if __name__ == '__main__':
     if opts.setup:
         mpstate.rl.set_prompt("")
 
-
-    if not opts.setup:
-        # some core functionality is in modules
-        standard_modules = opts.default_modules.split(',')
-        for m in standard_modules:
-            load_module(m, quiet=True)
-            print("loaded", m)
     if opts.console:
         process_stdin('module load console')
+        process_stdin('module load autopilot')
 
     if opts.map:
         process_stdin('module load map')
