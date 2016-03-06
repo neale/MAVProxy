@@ -1116,17 +1116,34 @@ def send_heartbeat(master):
         MAV_AUTOPILOT_NONE = 4
         master.mav.heartbeat_send(MAV_GROUND, MAV_AUTOPILOT_NONE)
 
-def get_vision_data():
-    self.depth = self.sock.recv(14)
-    self.last_frames.appendleft(self.frame)
-    self.frame = self.frame
+def open_socket():
+    sock_option = True
+    print("attemping connection to vision system")
+    port = 9999
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
-        data_string = self.depth.split(',')
-        self.depth   = int(data_string[0])
-        self.xcenter = int(data_string[1])
-        self.ycenter = int(''.join([i for i in data_string[2] if str.isdigit(i)]))
-        self.depth   = int(self.depth)
+        sock.connect(('localhost', port))
+    except socket.error:
+        print("socket not availible")
+    socket.timeout(0.1)
+    print("connecting to socket: ", port)
+    time.sleep(0.2)
 
+def close_sock():
+
+    self.sock_option = False
+    socket.close()
+
+def get_vision_data():
+    self.sock_stream = self.sock.recv(14)
+    try:
+        data_string = self.sock_stream.split(',')
+        self.current_depth  = int(data_string[0])
+        self.xcenter        = int(data_string[1])
+        self.ycenter        = int(''.join([i for i in data_string[2] if str.isdigit(i)]))
+        self.depth_stream.appendleft(self.current_depth)
+    except:
+        print("could not convert network data")
 
 def periodic_tasks():
     '''run periodic checks'''
@@ -1266,25 +1283,6 @@ def input_loop():
             mpstate.status.exit = True
             sys.exit(1)
         mpstate.input_queue.put(line)
-
-def open_socket():
-    sock_option = True
-    print("attemping connection to vision system")
-    port = 9999
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        sock.connect(('localhost', port))
-    except socket.error:
-        print("socket not availible")
-    socket.timeout(0.1)
-    print("connecting to socket: ", port)
-    time.sleep(0.2)
-
-def close_sock():
-
-    self.sock_option = False
-    socket.close()
-
 
 def run_script(scriptfile):
     '''run a script file'''
