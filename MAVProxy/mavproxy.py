@@ -148,6 +148,9 @@ def say(text, priority='important'):
     '''text and/or speech output'''
     mpstate.functions.say(text, priority)
 
+class MAVFunctions(object):
+    pass
+
 class MPState(object):
     '''holds state of mavproxy'''
     def __init__(self):
