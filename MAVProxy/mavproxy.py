@@ -1392,7 +1392,7 @@ if __name__ == '__main__':
         os.environ['MAVLINK09'] = '1'
     if opts.mav20:
         os.environ['MAVLINK20'] = '1'
-    from pymavlink import mavutil, mavparm
+    from pymavlink import mavutil, mavparm, mavwp
     mavutil.set_dialect(opts.dialect)
     
     # global mavproxy state
