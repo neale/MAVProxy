@@ -1434,9 +1434,6 @@ if __name__ == '__main__':
     mpstate.status.target_component = opts.TARGET_COMPONENT
 
     mpstate.mav_master = []
-
-    mpstate.rl = rline.rline("MAV> ", mpstate)
-
   
     load_module('link', quiet=True)
 
