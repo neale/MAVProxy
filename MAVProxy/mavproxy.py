@@ -847,7 +847,7 @@ def cmd_module(args):
                 return
         print("Unable to find module %s" % modname)
     else:
-        print(usage)f
+        print(usage)
 
 def cmd_alias(args):
     '''alias commands'''
