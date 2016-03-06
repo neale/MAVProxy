@@ -1415,8 +1415,8 @@ if __name__ == '__main__':
               print("%s" % port)
 
     # container for status information
-    mpstate.settings.target_system = opts.TARGET_SYSTEM
-    mpstate.settings.target_component = opts.TARGET_COMPONENT
+    mpstate.status.target_system = opts.TARGET_SYSTEM
+    mpstate.status.target_component = opts.TARGET_COMPONENT
 
     mpstate.mav_master = []
 
