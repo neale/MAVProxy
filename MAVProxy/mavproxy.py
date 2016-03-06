@@ -1497,6 +1497,7 @@ if __name__ == '__main__':
                 raise RuntimeError("module %s already loaded" % (modname,))
             m.init(mpstate)
             mpstate.modules.append(m)
+            print(mpstate.modules)
         except:
             print("could not load autopilot")
 
@@ -1526,14 +1527,18 @@ if __name__ == '__main__':
             for c in cmds:
                 process_stdin(c)
 
+    open_socket()
+
     # run main loop as a thread
     mpstate.status.thread = threading.Thread(target=main_loop, name='main_loop')
     mpstate.status.socket = threading.Thread(target=get_vision_data, name='get_vision_data')
     mpstate.status.thread.daemon = True
+    mpstate.status.socket.daemon = True
     mpstate.status.thread.start()
+    mpstate.status.socket.start()
+
 
     # open socket to port 9999 to import vision data
-    open_socket()
     # use main program for input. This ensures the terminal cleans
     # up on exit
     while (mpstate.status.exit != True):
