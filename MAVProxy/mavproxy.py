@@ -192,7 +192,14 @@ class MPState(object):
               ('shownoise', int, 1),
               ('basealt', int, 0)]
             )
-
+        self.completions = {
+            "script"         : ["(FILENAME)"],
+            "set"            : ["(SETTING)"],
+            "status"         : ["(VARIABLE)"],
+            "module"    : ["list",
+                           "load (AVAILMODULES)",
+                           "<unload|reload> (LOADEDMODULES)"]
+        }
         self.status = MPStatus()
         # master mavlink device
         self.mav_master = None
