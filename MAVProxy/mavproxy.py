@@ -1436,15 +1436,21 @@ if __name__ == '__main__':
     mpstate.mav_master = []
     # open master link
     for mdev in opts.master:
-        if not mpstate.module('link').link_add(mdev):
-            sys.exit(1)
-
-    if not opts.master and len(serial_list) == 1:
-          print("Connecting to %s" % serial_list[0])
-          mpstate.module('link').link_add(serial_list[0].device)
-    elif not opts.master:
-          wifi_device = '0.0.0.0:14550'
-          mpstate.module('link').link_add(wifi_device)
+        if mdev.startswith('tcp:'):
+            m = mavutil.mavtcp(mdev[4:])
+        elif mdev.find(':') != -1:
+            m = mavutil.mavudp(mdev, input=True)
+        else:
+            m = mavutil.mavserial(mdev, baud=opts.baudrate, autoreconnect=True)
+        m.mav.set_callback(master_callback, m)
+        m.linknum = len(mpstate.mav_master)
+        m.linkerror = False
+        m.link_delayed = False
+        m.last_heartbeat = 0
+        m.last_message = 0
+        m.highest_msec = 0
+        mpstate.mav_master.append(m)
+        mpstate.status.counters['MasterIn'].append(0)
 
 
     # open any mavlink output ports
