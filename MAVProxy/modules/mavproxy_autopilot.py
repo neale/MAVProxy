@@ -9,7 +9,7 @@ class Autopilotmodule(mp_module.MPModule):
 
     def __init__(self, mpstate):
 
-        super(Autopilotmodule, self).__init__(mpstate, "autopilot", "autopilot command ", public = True)
+        super(Autopilotmodule, self).__init__(mpstate, "autopilot", "autopilot command ")
         self.add_command('autopilot', self.cmd_ap, "Autopilot input control")
         self.add_command('current_imu', self.print_imu, "prints out current IMU data", [ '' ])
         self.add_command('open_socket', self.cmd_sock, "connect to socket", ['sockno'])
@@ -59,7 +59,7 @@ class Autopilotmodule(mp_module.MPModule):
         self.x_sigma = collections.deque([0,0,0,0], 4)
         self.y_sigma = collections.deque([0,0,0,0], 4)
 
-        # initialize deltas
+        # initialize deltas                                                                                                                                                   
         self.x_delta = 0
         self.y_delta = 0
 
