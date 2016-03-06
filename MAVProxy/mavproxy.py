@@ -245,39 +245,6 @@ def cmd_link(args):
                                                                                   linkdelay,
                                                                                   master.mav_loss,
                                                                                   master.packet_loss()))
-
-command_map = {
-    'switch'  : (cmd_switch,   'set RC switch (1-5), 0 disables'),
-    'rc'      : (cmd_rc,       'override a RC channel value'),
-    'wp'      : (cmd_wp,       'waypoint management'),
-    'fence'   : (cmd_fence,    'geo-fence management'),
-    'param'   : (cmd_param,    'manage APM parameters'),
-    'setup'   : (cmd_setup,    'go into setup mode'),
-    'reset'   : (cmd_reset,    'reopen the connection to the MAVLink master'),
-    'status'  : (cmd_status,   'show status'),
-    'auto'    : (cmd_auto,     'set AUTO mode'),
-    'ground'  : (cmd_ground,   'do a ground start'),
-    'level'   : (cmd_level,    'set level on a multicopter'),
-    'accelcal': (cmd_accelcal, 'do 3D accelerometer calibration'),
-    'calpress': (cmd_calpressure,'calibrate pressure sensors'),
-    'loiter'  : (cmd_loiter,   'set LOITER mode'),
-    'rtl'     : (cmd_rtl,      'set RTL mode'),
-    'manual'  : (cmd_manual,   'set MANUAL mode'),
-    'fbwa'    : (cmd_fbwa,     'set FBWA mode'),
-    'set'     : (cmd_set,      'mavproxy settings'),
-    'bat'     : (cmd_bat,      'show battery levels'),
-    'alt'     : (cmd_alt,      'show relative altitude'),
-    'link'    : (cmd_link,     'show link status'),
-    'servo'   : (cmd_servo,    'set a servo value'),
-    'reboot'  : (cmd_reboot,   'reboot the autopilot'),
-    'up'      : (cmd_up,       'adjust TRIM_PITCH_CD up by 5 degrees'),
-    'watch'   : (cmd_watch,    'watch a MAVLink pattern'),
-    'module'  : (cmd_module,   'module commands'),
-    'alias'   : (cmd_alias,    'command aliases'),
-    'arm'     : (cmd_arm,      'ArduCopter arm motors'),
-    'disarm'  : (cmd_disarm,   'ArduCopter disarm motors')
-    }
-
 def cmd_switch(args):
     '''handle RC switch changes'''
     mapping = [ 0, 1165, 1295, 1425, 1555, 1685, 1815 ]
@@ -878,6 +845,39 @@ def cmd_arm(args):
 def cmd_disarm(args):
   '''disarm motors'''
   mpstate.master().arducopter_disarm()
+command_map = {
+    'switch'  : (cmd_switch,   'set RC switch (1-5), 0 disables'),
+    'rc'      : (cmd_rc,       'override a RC channel value'),
+    'wp'      : (cmd_wp,       'waypoint management'),
+    'fence'   : (cmd_fence,    'geo-fence management'),
+    'param'   : (cmd_param,    'manage APM parameters'),
+    'setup'   : (cmd_setup,    'go into setup mode'),
+    'reset'   : (cmd_reset,    'reopen the connection to the MAVLink master'),
+    'status'  : (cmd_status,   'show status'),
+    'auto'    : (cmd_auto,     'set AUTO mode'),
+    'ground'  : (cmd_ground,   'do a ground start'),
+    'level'   : (cmd_level,    'set level on a multicopter'),
+    'accelcal': (cmd_accelcal, 'do 3D accelerometer calibration'),
+    'calpress': (cmd_calpressure,'calibrate pressure sensors'),
+    'loiter'  : (cmd_loiter,   'set LOITER mode'),
+    'rtl'     : (cmd_rtl,      'set RTL mode'),
+    'manual'  : (cmd_manual,   'set MANUAL mode'),
+    'fbwa'    : (cmd_fbwa,     'set FBWA mode'),
+    'set'     : (cmd_set,      'mavproxy settings'),
+    'bat'     : (cmd_bat,      'show battery levels'),
+    'alt'     : (cmd_alt,      'show relative altitude'),
+    'link'    : (cmd_link,     'show link status'),
+    'servo'   : (cmd_servo,    'set a servo value'),
+    'reboot'  : (cmd_reboot,   'reboot the autopilot'),
+    'up'      : (cmd_up,       'adjust TRIM_PITCH_CD up by 5 degrees'),
+    'watch'   : (cmd_watch,    'watch a MAVLink pattern'),
+    'module'  : (cmd_module,   'module commands'),
+    'alias'   : (cmd_alias,    'command aliases'),
+    'arm'     : (cmd_arm,      'ArduCopter arm motors'),
+    'disarm'  : (cmd_disarm,   'ArduCopter disarm motors')
+    }
+
+
 
 
 def process_stdin(line):
