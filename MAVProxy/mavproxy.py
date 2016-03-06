@@ -1491,7 +1491,7 @@ if __name__ == '__main__':
         standard_modules = opts.default_modules.split(',')
         for m in standard_modules:
             load_module(m, quiet=True)
-
+            print("loaded", m)
     if opts.console:
         process_stdin('module load console')
 
