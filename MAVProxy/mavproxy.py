@@ -7,41 +7,93 @@ Released under the GNU GPL version 3 or later
 
 '''
 
-import sys, os, time, socket, signal
+import sys, os, struct, math, time, socket
 import fnmatch, errno, threading
 import serial, Queue, select
-import traceback
+
+# The modules subdirectory contains the modules that come with
+# mavproxy.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'modules'))
+
+# find the mavlink.py module
+for d in [ 'pymavlink',
+           os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'pymavlink'),
+           os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'mavlink', 'pymavlink') ]:
+    if os.path.exists(d):
+        sys.path.insert(0, d)
+
 import select
-import shlex
+from modules.lib import textconsole
+from modules.lib import mp_settings
 
-from MAVProxy.modules.lib import textconsole
-from MAVProxy.modules.lib import rline
-from MAVProxy.modules.lib import mp_module
-from MAVProxy.modules.lib import dumpstacks
+class MPSettings(object):
+    def __init__(self):
+        self.vars = [ ('link', int),
+                      ('altreadout', int),
+                      ('distreadout', int),
+                      ('battreadout', int),
+                      ('heartbeat', int),
+                      ('numcells', int),
+                      ('speech', int),
+                      ('mavfwd', int),
+                      ('mavfwd_rate', int),
+                      ('streamrate', int),
+                      ('streamrate2', int),
+                      ('heartbeatreport', int),
+                      ('radiosetup', int),
+                      ('paramretry', int),
+                      ('moddebug', int),
+                      ('rc1mul', int),
+                      ('rc2mul', int),
+                      ('rc4mul', int)]
+        self.link = 1
+        self.altreadout = 10
+        self.distreadout = 200
+        self.battreadout = 0
+        self.basealtitude = -1
+        self.heartbeat = 1
+        self.numcells = 0
+        self.mavfwd = 1
+        self.mavfwd_rate = 0
+        self.speech = 0
+        self.streamrate = 4
+        self.streamrate2 = 4
+        self.radiosetup = 0
+        self.heartbeatreport = 1
+        self.paramretry = 10
+        self.rc1mul = 1
+        self.rc2mul = 1
+        self.rc4mul = 1
+        self.moddebug = 0
 
-# adding all this allows pyinstaller to build a working windows executable
-# note that using --hidden-import does not work for these modules
-try:
-      from multiprocessing import freeze_support
-      from pymavlink import mavwp, mavutil
-      import matplotlib, HTMLParser
-      try:
-            import readline
-      except ImportError:
-            import pyreadline as readline
-except Exception:
-      pass
+    def set(self, vname, value):
+        '''set a setting'''
+        for (v,t) in sorted(self.vars):
+            if v == vname:
+                try:
+                    value = t(value)
+                except:
+                    print("Unable to convert %s to type %s" % (value, t))
+                    return
+                setattr(self, vname, value)
+                return  
 
-if __name__ == '__main__':
-      freeze_support()
+    def show(self, v):
+        '''show settings'''
+        print("%20s %s" % (v, getattr(self, v)))
 
+    def show_all(self):
+        '''show all settings'''
+        for (v,t) in sorted(self.vars):
+            self.show(v)
 class MPStatus(object):
     '''hold status information about the mavproxy'''
     def __init__(self):
-        self.gps	 = None
+        if opts.quadcopter:
+            self.rc_throttle = [ 0.0, 0.0, 0.0, 0.0 ]
+        self.gps = None
         self.msgs = {}
         self.msg_count = {}
-        self.counters = {'MasterIn' : [], 'MasterOut' : 0, 'FGearIn' : 0, 'FGearOut' : 0, 'Slave' : 0}
         self.setup_mode = opts.setup
         self.mav_error = 0
         self.altitude = 0
@@ -65,6 +117,11 @@ class MPStatus(object):
         self.last_streamrate2 = -1
         self.last_seq = 0
         self.armed = False
+        self.x_center, self.last_x_center = 0, 0
+        self.y_center, self.last_y_center = 0, 0
+        self.current_depth = 0
+        self.depth_stream = collections.deque([0]*5, 5)
+
 
     def show(self, f, pattern=None):
         '''write status to status.txt'''
@@ -86,118 +143,59 @@ class MPStatus(object):
         self.show(f)
         f.close()
 
-def say_text(text, priority='important'):
-    '''text output - default function for say()'''
-    mpstate.console.writeln(text)
 
 def say(text, priority='important'):
     '''text and/or speech output'''
     mpstate.functions.say(text, priority)
-
-def add_input(cmd, immediate=False):
-    '''add some command input to be processed'''
-    if immediate:
-        process_stdin(cmd)
-    else:
-        mpstate.input_queue.put(cmd)
-
-class MAVFunctions(object):
-    '''core functions available in modules'''
-    def __init__(self):
-        self.process_stdin = add_input
-        self.param_set = param_set
-        self.get_mav_param = get_mav_param
-        self.say = say_text
-        # input handler can be overridden by a module
-        self.input_handler = None
 
 class MPState(object):
     '''holds state of mavproxy'''
     def __init__(self):
         self.console = textconsole.SimpleConsole()
         self.map = None
-        self.map_functions = {}
-        self.vehicle_type = None
-        self.vehicle_name = None
-        from MAVProxy.modules.lib.mp_settings import MPSettings, MPSetting
-        self.settings = MPSettings(
-            [ MPSetting('link', int, 1, 'Primary Link', tab='Link', range=(0,4), increment=1),
-              MPSetting('streamrate', int, 4, 'Stream rate link1', range=(-1,20), increment=1),
-              MPSetting('streamrate2', int, 4, 'Stream rate link2', range=(-1,20), increment=1),
-              MPSetting('heartbeat', int, 1, 'Heartbeat rate', range=(0,5), increment=1),
-              MPSetting('mavfwd', bool, True, 'Allow forwarded control'),
-              MPSetting('mavfwd_rate', bool, False, 'Allow forwarded rate control'),
-              MPSetting('shownoise', bool, True, 'Show non-MAVLink data'),
-              MPSetting('baudrate', int, opts.baudrate, 'baudrate for new links', range=(0,10000000), increment=1),
-              MPSetting('rtscts', bool, opts.rtscts, 'enable flow control'),
-              MPSetting('select_timeout', float, 0.01, 'select timeout'),
-
-              MPSetting('altreadout', int, 10, 'Altitude Readout',
-                        range=(0,100), increment=1, tab='Announcements'),
-              MPSetting('distreadout', int, 200, 'Distance Readout', range=(0,10000), increment=1),
-
-              MPSetting('moddebug', int, opts.moddebug, 'Module Debug Level', range=(0,3), increment=1, tab='Debug'),
-              MPSetting('compdebug', int, 0, 'Computation Debug Mask', range=(0,3), tab='Debug'),
-              MPSetting('flushlogs', bool, False, 'Flush logs on every packet'),
-              MPSetting('requireexit', bool, False, 'Require exit command'),
-              MPSetting('wpupdates', bool, True, 'Announce waypoint updates'),
-
-              MPSetting('basealt', int, 0, 'Base Altitude', range=(0,30000), increment=1, tab='Altitude'),
-              MPSetting('wpalt', int, 100, 'Default WP Altitude', range=(0,10000), increment=1),
-              MPSetting('rallyalt', int, 90, 'Default Rally Altitude', range=(0,10000), increment=1),
-              MPSetting('terrainalt', str, 'Auto', 'Use terrain altitudes', choice=['Auto','True','False']),
-              MPSetting('rally_breakalt', int, 40, 'Default Rally Break Altitude', range=(0,10000), increment=1),
-              MPSetting('rally_flags', int, 0, 'Default Rally Flags', range=(0,10000), increment=1),
-
-              MPSetting('source_system', int, 255, 'MAVLink Source system', range=(0,255), increment=1, tab='MAVLink'),
-              MPSetting('source_component', int, 0, 'MAVLink Source component', range=(0,255), increment=1),
-              MPSetting('target_system', int, 0, 'MAVLink target system', range=(0,255), increment=1),
-              MPSetting('target_component', int, 0, 'MAVLink target component', range=(0,255), increment=1),
-              MPSetting('state_basedir', str, None, 'base directory for logs and aircraft directories'),
-              MPSetting('allow_unsigned', bool, True, 'whether unsigned packets will be accepted')
-            ])
-
-        self.completions = {
-            "script"         : ["(FILENAME)"],
-            "set"            : ["(SETTING)"],
-            "status"         : ["(VARIABLE)"],
-            "module"    : ["list",
-                           "load (AVAILMODULES)",
-                           "<unload|reload> (LOADEDMODULES)"]
-            }
+        self.settings = mp_settings.MPSettings(
+             [ ('link', int, 1),
+              ('altreadout', int, 10),
+              ('distreadout', int, 200),
+              ('battreadout', int, 0),
+              ('heartbeat', int, 1),
+              ('numcells', int, 1),
+              ('speech', int, 0),
+              ('mavfwd', int, 1),
+              ('mavfwd_rate', int, 0),
+              ('streamrate', int, 4),
+              ('streamrate2', int, 4),
+              ('heartbeatreport', int, 1),
+              ('moddebug', int, 0),
+              ('rc1mul', int, 1),
+              ('rc2mul', int, 1),
+              ('rc4mul', int, 1),
+              ('shownoise', int, 1),
+              ('basealt', int, 0)]
+            )
 
         self.status = MPStatus()
-
         # master mavlink device
         self.mav_master = None
-
         # mavlink outputs
         self.mav_outputs = []
-        self.sysid_outputs = {}
-
         # SITL output
         self.sitl_output = None
 
         self.mav_param = mavparm.MAVParmDict()
         self.modules = []
-        self.public_modules = {}
+        self.mav_param_count = 0
+        self.mav_param_set = set()
+        self.functions.say = say
+        self.functions.process_stdin = process_stdin
         self.functions = MAVFunctions()
         self.select_extra = {}
         self.continue_mode = False
         self.aliases = {}
-        import platform
-        self.system = platform.system()
-
-    def module(self, name):
-        '''Find a public module (most modules are private)'''
-        if name in self.public_modules:
-            return self.public_modules[name]
-        return None
     
     def master(self):
         '''return the currently chosen mavlink master object'''
-        if len(self.mav_master) == 0:
-              return None
+
         if self.settings.link > len(self.mav_master):
             self.settings.link = 1
 
@@ -210,14 +208,15 @@ class MPState(object):
         return self.mav_master[self.settings.link-1]
 
 
+
+def get_usec():
+    '''time since 1970 in microseconds'''
+    return int(time.time() * 1.0e6)
+
+
 def get_mav_param(param, default=None):
     '''return a EEPROM parameter value'''
     return mpstate.mav_param.get(param, default)
-
-def param_set(name, value, retries=3):
-    '''set a parameter'''
-    name = name.upper()
-    return mpstate.mav_param.mavset(mpstate.master(), name, value, retries=retries)
 
 def cmd_script(args):
     '''run a script'''
@@ -227,9 +226,499 @@ def cmd_script(args):
 
     run_script(args[0])
 
+def import_package(name):
+   
+    mod = __import__(name)   
+    components = name.split('.')
+    for comp in components[1:]:
+        mod = getattr(mod, comp)
+    return mod
+
+def cmd_link(args):
+    for master in mpstate.mav_master:
+        linkdelay = (mpstate.status.highest_msec - master.highest_msec)*1.0e-3
+        if master.linkerror:
+            print("link %u down" % (master.linknum+1))
+        else:
+            print("link %u OK (%u packets, %.2fs delay, %u lost, %.1f%% loss)" % (master.linknum+1,
+                                                                                  mpstate.status.counters['MasterIn'][master.linknum],
+                                                                                  linkdelay,
+                                                                                  master.mav_loss,
+                                                                                  master.packet_loss()))
+
+command_map = {
+    'switch'  : (cmd_switch,   'set RC switch (1-5), 0 disables'),
+    'rc'      : (cmd_rc,       'override a RC channel value'),
+    'wp'      : (cmd_wp,       'waypoint management'),
+    'fence'   : (cmd_fence,    'geo-fence management'),
+    'param'   : (cmd_param,    'manage APM parameters'),
+    'setup'   : (cmd_setup,    'go into setup mode'),
+    'reset'   : (cmd_reset,    'reopen the connection to the MAVLink master'),
+    'status'  : (cmd_status,   'show status'),
+    'auto'    : (cmd_auto,     'set AUTO mode'),
+    'ground'  : (cmd_ground,   'do a ground start'),
+    'level'   : (cmd_level,    'set level on a multicopter'),
+    'accelcal': (cmd_accelcal, 'do 3D accelerometer calibration'),
+    'calpress': (cmd_calpressure,'calibrate pressure sensors'),
+    'loiter'  : (cmd_loiter,   'set LOITER mode'),
+    'rtl'     : (cmd_rtl,      'set RTL mode'),
+    'manual'  : (cmd_manual,   'set MANUAL mode'),
+    'fbwa'    : (cmd_fbwa,     'set FBWA mode'),
+    'set'     : (cmd_set,      'mavproxy settings'),
+    'bat'     : (cmd_bat,      'show battery levels'),
+    'alt'     : (cmd_alt,      'show relative altitude'),
+    'link'    : (cmd_link,     'show link status'),
+    'servo'   : (cmd_servo,    'set a servo value'),
+    'reboot'  : (cmd_reboot,   'reboot the autopilot'),
+    'up'      : (cmd_up,       'adjust TRIM_PITCH_CD up by 5 degrees'),
+    'watch'   : (cmd_watch,    'watch a MAVLink pattern'),
+    'module'  : (cmd_module,   'module commands'),
+    'alias'   : (cmd_alias,    'command aliases'),
+    'arm'     : (cmd_arm,      'ArduCopter arm motors'),
+    'disarm'  : (cmd_disarm,   'ArduCopter disarm motors')
+    }
+
+def cmd_switch(args):
+    '''handle RC switch changes'''
+    mapping = [ 0, 1165, 1295, 1425, 1555, 1685, 1815 ]
+    if len(args) != 1:
+        print("Usage: switch <pwmvalue>")
+        return
+    value = int(args[0])
+    if value < 0 or value > 6:
+        print("Invalid switch value. Use 1-6 for flight modes, '0' to disable")
+        return
+    if opts.quadcopter:
+        default_channel = 5
+    else:
+        default_channel = 8
+    flite_mode_ch_parm = int(get_mav_param("FLTMODE_CH", default_channel))
+    mpstate.status.override[flite_mode_ch_parm-1] = mapping[value]
+    mpstate.status.override_counter = 10
+    send_rc_override()
+    if value == 0:
+        print("Disabled RC switch override")
+    else:
+        print("Set RC switch override to %u (PWM=%u channel=%u)" % (
+            value, mapping[value], flite_mode_ch_parm))
+
+def cmd_rc(args):
+    '''handle RC value override'''
+    if len(args) != 2:
+        print("Usage: rc <channel|all> <pwmvalue>")
+        return
+    value   = int(args[1])
+    if value == -1:
+        value = 65535
+    if args[0] == 'all':
+        for i in range(8):
+            mpstate.status.override[i] = value
+    else:
+        channel = int(args[0])
+        mpstate.status.override[channel-1] = value
+        if channel < 1 or channel > 8:
+            print("Channel must be between 1 and 8 or 'all'")
+            return
+    mpstate.status.override_counter = 10
+    send_rc_override()
+
+def send_rc_override():
+    '''send RC override packet'''
+    if mpstate.sitl_output:
+        buf = struct.pack('<HHHHHHHH',
+                          *mpstate.status.override)
+        mpstate.sitl_output.write(buf)
+    else:
+        mpstate.master().mav.rc_channels_override_send(mpstate.status.target_system,
+                                                         mpstate.status.target_component,
+                                                         *mpstate.status.override)
+def cmd_param(args):
+    '''control parameters'''
+    param_wildcard = "*"
+    if len(args) < 1:
+        print("usage: param <fetch|edit|set|show|diff>")
+        return
+    if args[0] == "fetch":
+        if len(args) == 1:
+            mpstate.master().param_fetch_all()
+            mpstate.mav_param_set = set()
+            print("Requested parameter list")
+        else:
+            mpstate.master().param_fetch_one(args[1].upper())
+            mpstate.status.fetch_one = True
+            print("Requested parameter %s" % args[1])
+    elif args[0] == "save":
+        if len(args) < 2:
+            print("usage: param save <filename> [wildcard]")
+            return
+        if len(args) > 2:
+            param_wildcard = args[2]
+        else:
+            param_wildcard = "*"
+        mpstate.mav_param.save(args[1], param_wildcard, verbose=True)
+    elif args[0] == "diff":
+        if len(args) < 2:
+            if opts.aircraft is not None:
+                filename = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(mpstate.status.logdir))), 'mavdefault.txt')
+            else:
+                print("Usage: param diff <filename>")
+        else:
+            filename = args[1]
+        if len(args) == 3:
+            wildcard = args[2]
+        else:
+            wildcard = '*'
+        mpstate.mav_param.diff(filename, wildcard=wildcard)
+    elif args[0] == "set":
+        if len(args) != 3:
+            print("Usage: param set PARMNAME VALUE")
+            return
+        param = args[1]
+        value = args[2]
+        if not param.upper() in mpstate.mav_param:
+            print("Unable to find parameter '%s'" % param)
+            return
+        param_set(param, value)
+    elif args[0] == "load":
+        if len(args) < 2:
+            print("Usage: param load <filename> [wildcard]")
+            return
+        if len(args) > 2:
+            param_wildcard = args[2]
+        else:
+            param_wildcard = "*"
+        mpstate.mav_param.load(args[1], param_wildcard, mpstate.master())
+    elif args[0] == "show":
+        if len(args) > 1:
+            pattern = args[1]
+        else:
+            pattern = "*"
+        mpstate.mav_param.show(pattern)
+    else:
+        print("Unknown subcommand '%s' (try 'fetch', 'save', 'set', 'show', 'load')" % args[0])
+
+def cmd_loiter(args):
+    '''set LOITER mode'''
+    mpstate.master().set_mode_loiter()
+
+def cmd_auto(args):
+    '''set AUTO mode'''
+    mpstate.master().set_mode_auto()
+
+def cmd_ground(args):
+    '''do a ground start mode'''
+    mpstate.master().calibrate_imu()
+
+def cmd_level(args):
+    '''run a accel level'''
+    mpstate.master().calibrate_level()
+
+def cmd_accelcal(args):
+    '''do a full 3D accel calibration'''
+    mav = mpstate.master()
+    # ack the APM to begin 3D calibration of accelerometers
+    mav.mav.command_long_send(mav.target_system, mav.target_component,
+                              mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION, 0,
+                              0, 0, 0, 0, 1, 0, 0)
+    count = 0
+    # we expect 6 messages and acks
+    while count < 6:
+        m = mav.recv_match(type='STATUSTEXT', blocking=True)
+        text = str(m.text)
+        if not text.startswith('Place APM'):
+            continue
+        # wait for user to hit enter
+        mpstate.rl.line = None
+        while mpstate.rl.line is None:
+            time.sleep(0.1)
+        mpstate.rl.line = None
+        count += 1
+        # tell the APM that we've done as requested
+        mav.mav.command_ack_send(count, 1)
+
+def cmd_reboot(args):
+    '''reboot autopilot'''
+    mpstate.master().reboot_autopilot()
+
+def cmd_calpressure(args):
+    '''calibrate pressure sensors'''
+    mpstate.master().calibrate_pressure()
+
+def cmd_rtl(args):
+    '''set RTL mode'''
+    mpstate.master().set_mode_rtl()
+
+def cmd_manual(args):
+    '''set MANUAL mode'''
+    mpstate.master().set_mode_manual()
+
+def cmd_servo(args):
+    '''set a servo'''
+    if len(args) != 2:
+        print("Usage: servo <channel> <pwmvalue>")
+        return
+    channel = int(args[0])
+    value   = int(args[1])
+    mpstate.master().set_servo(channel, value)
+
+def cmd_fbwa(args):
+    '''set FBWA mode'''
+    mpstate.master().set_mode_fbwa()
+
+def process_waypoint_request(m, master):
+    '''process a waypoint request from the master'''
+    if (not mpstate.status.loading_waypoints or
+        time.time() > mpstate.status.loading_waypoint_lasttime + 10.0):
+        mpstate.status.loading_waypoints = False
+        mpstate.console.error("not loading waypoints")
+        return
+    if m.seq >= mpstate.status.wploader.count():
+        mpstate.console.error("Request for bad waypoint %u (max %u)" % (m.seq, mpstate.status.wploader.count()))
+        return
+    wp = mpstate.status.wploader.wp(m.seq)
+    wp.target_system = mpstate.status.target_system
+    wp.target_component = mpstate.status.target_component
+    master.mav.send(mpstate.status.wploader.wp(m.seq))
+    mpstate.status.loading_waypoint_lasttime = time.time()
+    mpstate.console.writeln("Sent waypoint %u : %s" % (m.seq, mpstate.status.wploader.wp(m.seq)))
+    if m.seq == mpstate.status.wploader.count() - 1:
+        mpstate.status.loading_waypoints = False
+        mpstate.console.writeln("Sent all %u waypoints" % mpstate.status.wploader.count())
+
+def load_waypoints(filename):
+    '''load waypoints from a file'''
+    mpstate.status.wploader.target_system = mpstate.status.target_system
+    mpstate.status.wploader.target_component = mpstate.status.target_component
+    try:
+        mpstate.status.wploader.load(filename)
+    except Exception, msg:
+        print("Unable to load %s - %s" % (filename, msg))
+        return
+    print("Loaded %u waypoints from %s" % (mpstate.status.wploader.count(), filename))
+
+    mpstate.master().waypoint_clear_all_send()
+    if mpstate.status.wploader.count() == 0:
+        return
+
+    mpstate.status.loading_waypoints = True
+    mpstate.status.loading_waypoint_lasttime = time.time()
+    mpstate.master().waypoint_count_send(mpstate.status.wploader.count())
+
+
+def update_waypoints(filename, wpnum):
+    '''update waypoints from a file'''
+    mpstate.status.wploader.target_system = mpstate.status.target_system
+    mpstate.status.wploader.target_component = mpstate.status.target_component
+    try:
+        mpstate.status.wploader.load(filename)
+    except Exception, msg:
+        print("Unable to load %s - %s" % (filename, msg))
+        return
+    if mpstate.status.wploader.count() == 0:
+        print("No waypoints found in %s" % filename)
+        return
+    if wpnum == -1:
+        print("Loaded %u updated waypoints from %s" % (mpstate.status.wploader.count(), filename))
+    elif wpnum >= mpstate.status.wploader.count():
+        print("Invalid waypoint number %u" % wpnum)
+        return
+    else:
+        print("Loaded updated waypoint %u from %s" % (wpnum, filename))
+
+    mpstate.status.loading_waypoints = True
+    mpstate.status.loading_waypoint_lasttime = time.time()
+    if wpnum == -1:
+        start = 0
+        end = mpstate.status.wploader.count()-1
+    else:
+        start = wpnum
+        end = wpnum
+    mpstate.master().mav.mission_write_partial_list_send(mpstate.status.target_system,
+                                                         mpstate.status.target_component,
+                                                         start, end)
+
+def save_waypoints(filename):
+    '''save waypoints to a file'''
+    try:
+        mpstate.status.wploader.save(filename)
+    except Exception, msg:
+        print("Failed to save %s - %s" % (filename, msg))
+        return
+    print("Saved %u waypoints to %s" % (mpstate.status.wploader.count(), filename))
+
+
+def cmd_wp(args):
+    '''waypoint commands'''
+    if len(args) < 1:
+        print("usage: wp <list|load|save|set|clear>")
+        return
+
+    if args[0] == "load":
+        if len(args) != 2:
+            print("usage: wp load <filename>")
+            return
+        load_waypoints(args[1])
+    elif args[0] == "update":
+        if len(args) < 2:
+            print("usage: wp update <filename> <wpnum>")
+            return
+        if len(args) == 3:
+            wpnum = int(args[2])
+        else:
+            wpnum = -1
+        update_waypoints(args[1], wpnum)
+    elif args[0] == "list":
+        mpstate.status.wp_op = "list"
+        mpstate.master().waypoint_request_list_send()
+    elif args[0] == "save":
+        if len(args) != 2:
+            print("usage: wp save <filename>")
+            return
+        mpstate.status.wp_save_filename = args[1]
+        mpstate.status.wp_op = "save"
+        mpstate.master().waypoint_request_list_send()
+    elif args[0] == "show":
+        if len(args) != 2:
+            print("usage: wp show <filename>")
+            return
+        mpstate.status.wploader.load(args[1])
+    elif args[0] == "set":
+        if len(args) != 2:
+            print("usage: wp set <wpindex>")
+            return
+        mpstate.master().waypoint_set_current_send(int(args[1]))
+    elif args[0] == "clear":
+        mpstate.master().waypoint_clear_all_send()
+    else:
+        print("Usage: wp <list|load|save|set|show|clear>")
+
+
+def fetch_fence_point(i):
+    '''fetch one fence point'''
+    mpstate.master().mav.fence_fetch_point_send(mpstate.status.target_system,
+                                                mpstate.status.target_component, i)
+    tstart = time.time()
+    p = None
+    while time.time() - tstart < 1:
+        p = mpstate.master().recv_match(type='FENCE_POINT', blocking=False)
+        if p is not None:
+            break
+        time.sleep(0.1)
+        continue
+    if p is None:
+        mpstate.console.error("Failed to fetch point %u" % i)
+        return None
+    return p
+
+
+
+def load_fence(filename):
+    '''load fence points from a file'''
+    try:
+        mpstate.status.fenceloader.target_system = mpstate.status.target_system
+        mpstate.status.fenceloader.target_component = mpstate.status.target_component
+        mpstate.status.fenceloader.load(filename)
+    except Exception, msg:
+        print("Unable to load %s - %s" % (filename, msg))
+        return
+    print("Loaded %u geo-fence points from %s" % (mpstate.status.fenceloader.count(), filename))
+
+    # must disable geo-fencing when loading
+    action = get_mav_param('FENCE_ACTION', mavutil.mavlink.FENCE_ACTION_NONE)
+    param_set('FENCE_ACTION', mavutil.mavlink.FENCE_ACTION_NONE)
+    param_set('FENCE_TOTAL', mpstate.status.fenceloader.count())
+    for i in range(mpstate.status.fenceloader.count()):
+        p = mpstate.status.fenceloader.point(i)
+        mpstate.master().mav.send(p)
+        p2 = fetch_fence_point(i)
+        if p2 is None:
+            param_set('FENCE_ACTION', action)
+            return
+        if (p.idx != p2.idx or
+            abs(p.lat - p2.lat) >= 0.00003 or
+            abs(p.lng - p2.lng) >= 0.00003):
+            print("Failed to send fence point %u" % i)
+            param_set('FENCE_ACTION', action)
+            return
+    param_set('FENCE_ACTION', action)
+
+
+def list_fence(filename):
+    '''list fence points, optionally saving to a file'''
+
+    mpstate.status.fenceloader.clear()
+    count = get_mav_param('FENCE_TOTAL', 0)
+    if count == 0:
+        print("No geo-fence points")
+        return
+    for i in range(int(count)):
+        p = fetch_fence_point(i)
+        if p is None:
+            return
+        mpstate.status.fenceloader.add(p)
+
+    if filename is not None:
+        try:
+            mpstate.status.fenceloader.save(filename)
+        except Exception, msg:
+            print("Unable to save %s - %s" % (filename, msg))
+            return
+        print("Saved %u geo-fence points to %s" % (mpstate.status.fenceloader.count(), filename))
+    else:
+        for i in range(mpstate.status.fenceloader.count()):
+            p = mpstate.status.fenceloader.point(i)
+            mpstate.console.writeln("lat=%f lng=%f" % (p.lat, p.lng))
+    if mpstate.status.logdir != None:
+        fencetxt = os.path.join(mpstate.status.logdir, 'fence.txt')
+        mpstate.status.fenceloader.save(fencetxt)
+        print("Saved fence to %s" % fencetxt)
+
+def cmd_fence(args):
+    '''geo-fence commands'''
+    if len(args) < 1:
+        print("usage: fence <list|load|save|clear>")
+        return
+
+    if args[0] == "load":
+        if len(args) != 2:
+            print("usage: fence load <filename>")
+            return
+        load_fence(args[1])
+    elif args[0] == "list":
+        list_fence(None)
+    elif args[0] == "save":
+        if len(args) != 2:
+            print("usage: fence save <filename>")
+            return
+        list_fence(args[1])
+    elif args[0] == "show":
+        if len(args) != 2:
+            print("usage: fence show <filename>")
+            return
+        mpstate.status.fenceloader.load(args[1])
+    elif args[0] == "clear":
+        param_set('FENCE_TOTAL', 0)
+    else:
+        print("Usage: fence <list|load|save|show|clear>")
+
+def param_set(name, value, retries=3):
+    '''set a parameter'''
+    name = name.upper()
+    return mpstate.mav_param.mavset(mpstate.master(), name, value, retries=retries)
+
 def cmd_set(args):
     '''control mavproxy options'''
-    mpstate.settings.command(args)
+    if len(args) == 0:
+        mpstate.settings.show_all()
+        return
+
+    if getattr(mpstate.settings, args[0], None) is None:
+        print("Unknown setting '%s'" % args[0])
+        return
+    if len(args) == 1:
+        mpstate.settings.show(args[0])
+    else:
+        mpstate.settings.set(args[0], args[1])
 
 def cmd_status(args):
     '''show status'''
@@ -238,6 +727,34 @@ def cmd_status(args):
     else:
         for pattern in args:
             mpstate.status.show(sys.stdout, pattern=pattern)
+
+def cmd_bat(args):
+    '''show battery levels'''
+    print("Flight battery:   %u%%" % mpstate.status.battery_level)
+    print("Avionics battery: %u%%" % mpstate.status.avionics_battery_level)
+
+def cmd_alt(args):
+    '''show altitude'''
+    print("Altitude:  %.1f" % mpstate.status.altitude)
+
+
+def cmd_up(args):
+    '''adjust TRIM_PITCH_CD up by 5 degrees'''
+    if len(args) == 0:
+        adjust = 5.0
+    else:
+        adjust = float(args[0])
+    old_trim = get_mav_param('TRIM_PITCH_CD', None)
+    if old_trim is None:
+        print("Existing trim value unknown!")
+        return
+    new_trim = int(old_trim + (adjust*100))
+    if math.fabs(new_trim - old_trim) > 1000:
+        print("Adjustment by %d too large (from %d to %d)" % (adjust*100, old_trim, new_trim))
+        return
+    print("Adjusting TRIM_PITCH_CD from %d to %d" % (old_trim, new_trim))
+    param_set('TRIM_PITCH_CD', new_trim)
+
 
 def cmd_setup(args):
     mpstate.status.setup_mode = True
@@ -248,6 +765,17 @@ def cmd_reset(args):
     print("Resetting master")
     mpstate.master().reset()
 
+def cmd_link(args):
+    for master in mpstate.mav_master:
+        linkdelay = (mpstate.status.highest_msec - master.highest_msec)*1.0e-3
+        if master.linkerror:
+            print("link %u down" % (master.linknum+1))
+        else:
+            print("link %u OK (%u packets, %.2fs delay, %u lost, %.1f%% loss)" % (master.linknum+1,
+                                                                                  mpstate.status.counters['MasterIn'][master.linknum],
+                                                                                  linkdelay,
+                                                                                  master.mav_loss,
+                                                                                  master.packet_loss()))
 def cmd_watch(args):
     '''watch a mavlink packet pattern'''
     if len(args) == 0:
@@ -256,47 +784,6 @@ def cmd_watch(args):
     mpstate.status.watch = args[0]
     print("Watching %s" % mpstate.status.watch)
 
-def load_module(modname, quiet=False):
-    '''load a module'''
-    modpaths = ['MAVProxy.modules.mavproxy_%s' % modname, modname]
-    for (m,pm) in mpstate.modules:
-        if m.name == modname:
-            if not quiet:
-                print("module %s already loaded" % modname)
-            return False
-    for modpath in modpaths:
-        try:
-            m = import_package(modpath)
-            reload(m)
-            module = m.init(mpstate)
-            if isinstance(module, mp_module.MPModule):
-                mpstate.modules.append((module, m))
-                if not quiet:
-                    print("Loaded module %s" % (modname,))
-                return True
-            else:
-                ex = "%s.init did not return a MPModule instance" % modname
-                break
-        except ImportError as msg:
-            ex = msg
-            if mpstate.settings.moddebug > 1:
-                import traceback
-                print(traceback.format_exc())
-    print("Failed to load module: %s. Use 'set moddebug 3' in the MAVProxy console to enable traceback" % ex)
-    return False
-
-def unload_module(modname):
-    '''unload a module'''
-    for (m,pm) in mpstate.modules:
-        if m.name == modname:
-            if hasattr(m, 'unload'):
-                m.unload()
-            mpstate.modules.remove((m,pm))
-            print("Unloaded module %s" % modname)
-            return True
-    print("Unable to find module %s" % modname)
-    return False
-
 def cmd_module(args):
     '''module commands'''
     usage = "usage: module <list|load|reload|unload>"
@@ -304,43 +791,53 @@ def cmd_module(args):
         print(usage)
         return
     if args[0] == "list":
-        for (m,pm) in mpstate.modules:
-            print("%s: %s" % (m.name, m.description))
+        for m in mpstate.modules:
+            print("%s: %s" % (m.name(), m.description()))
     elif args[0] == "load":
         if len(args) < 2:
             print("usage: module load <name>")
             return
-        load_module(args[1])
+        modname = args[1]
+        modpath = 'mavproxy_%s' % (modname,)
+        try:
+            m = import_package(modpath)
+            if m in mpstate.modules:
+                raise RuntimeError("module %s already loaded" % (modname,))
+            m.init(mpstate)
+            mpstate.modules.append(m)
+            print("Loaded module %s" % (modname,))
+        except Exception, msg:
+            print("Unable to load module %s: %s" % (modname, msg))
     elif args[0] == "reload":
         if len(args) < 2:
             print("usage: module reload <name>")
             return
         modname = args[1]
-        pmodule = None
-        for (m,pm) in mpstate.modules:
-            if m.name == modname:
-                pmodule = pm
-        if pmodule is None:
-            print("Module %s not loaded" % modname)
-            return
-        if unload_module(modname):
-            import zipimport
-            try:
-                reload(pmodule)
-            except ImportError:
-                clear_zipimport_cache()
-                reload(pmodule)                
-            if load_module(modname, quiet=True):
+        for m in mpstate.modules:
+            if m.name() == modname:
+                try:
+                    m.unload()
+                except Exception:
+                    pass
+                reload(m)
+                m.init(mpstate)
                 print("Reloaded module %s" % modname)
+                return
+        print("Unable to find module %s" % modname)
     elif args[0] == "unload":
         if len(args) < 2:
             print("usage: module unload <name>")
             return
         modname = os.path.basename(args[1])
-        unload_module(modname)
+        for m in mpstate.modules:
+            if m.name() == modname:
+                m.unload()
+                mpstate.modules.remove(m)
+                print("Unloaded module %s" % modname)
+                return
+        print("Unable to find module %s" % modname)
     else:
         print(usage)
-
 
 def cmd_alias(args):
     '''alias commands'''
@@ -373,47 +870,15 @@ def cmd_alias(args):
         return
 
 
-def clear_zipimport_cache():
-    """Clear out cached entries from _zip_directory_cache.
-    See http://www.digi.com/wiki/developer/index.php/Error_messages"""
-    import sys, zipimport
-    syspath_backup = list(sys.path)
-    zipimport._zip_directory_cache.clear()
- 
-    # load back items onto sys.path
-    sys.path = syspath_backup
-    # add this too: see https://mail.python.org/pipermail/python-list/2005-May/353229.html
-    sys.path_importer_cache.clear()
-
-# http://stackoverflow.com/questions/211100/pythons-import-doesnt-work-as-expected
-# has info on why this is necessary.
-
-def import_package(name):
-    """Given a package name like 'foo.bar.quux', imports the package
-    and returns the desired module."""
-    import zipimport
-    try:
-        mod = __import__(name)
-    except ImportError:
-        clear_zipimport_cache()
-        mod = __import__(name)
-        
-    components = name.split('.')
-    for comp in components[1:]:
-        mod = getattr(mod, comp)
-    return mod
+def cmd_arm(args):
+  '''arm motors'''
+  mpstate.master().arducopter_arm()
 
 
-command_map = {
-    'script'  : (cmd_script,   'run a script of MAVProxy commands'),
-    'setup'   : (cmd_setup,    'go into setup mode'),
-    'reset'   : (cmd_reset,    'reopen the connection to the MAVLink master'),
-    'status'  : (cmd_status,   'show status'),
-    'set'     : (cmd_set,      'mavproxy settings'),
-    'watch'   : (cmd_watch,    'watch a MAVLink pattern'),
-    'module'  : (cmd_module,   'module commands'),
-    'alias'   : (cmd_alias,    'command aliases')
-    }
+def cmd_disarm(args):
+  '''disarm motors'''
+  mpstate.master().arducopter_disarm()
+
 
 def process_stdin(line):
     '''handle commands from user'''
@@ -613,25 +1078,6 @@ def log_paths():
             os.path.join(logdir, logname),
             os.path.join(logdir, logname + '.raw'))
 
-
-def open_telemetry_logs(logpath_telem, logpath_telem_raw):
-    '''open log files'''
-    if opts.append_log or opts.continue_mode:
-        mode = 'a'
-    else:
-        mode = 'w'
-    mpstate.logfile = open(logpath_telem, mode=mode)
-    mpstate.logfile_raw = open(logpath_telem_raw, mode=mode)
-    print("Log Directory: %s" % mpstate.status.logdir)
-    print("Telemetry log: %s" % logpath_telem)
-
-    # use a separate thread for writing to the logfile to prevent
-    # delays during disk writes (important as delays can be long if camera
-    # app is running)
-    t = threading.Thread(target=log_writer, name='log_writer')
-    t.daemon = True
-    t.start()
-
 def set_stream_rates():
     '''set mavlink stream rates'''
     if (not msg_period.trigger() and
@@ -670,12 +1116,21 @@ def send_heartbeat(master):
         MAV_AUTOPILOT_NONE = 4
         master.mav.heartbeat_send(MAV_GROUND, MAV_AUTOPILOT_NONE)
 
+def get_vision_data():
+    self.depth = self.sock.recv(14)
+    self.last_frames.appendleft(self.frame)
+    self.frame = self.frame
+    try:
+        data_string = self.depth.split(',')
+        self.depth   = int(data_string[0])
+        self.xcenter = int(data_string[1])
+        self.ycenter = int(''.join([i for i in data_string[2] if str.isdigit(i)]))
+        self.depth   = int(self.depth)
+
+
 def periodic_tasks():
     '''run periodic checks'''
     if mpstate.status.setup_mode:
-        return
-
-    if (mpstate.settings.compdebug & 2) != 0:
         return
 
     if mpstate.settings.heartbeat != 0:
@@ -708,7 +1163,7 @@ def periodic_tasks():
         if m.needs_unloading:
             unload_module(m.name)
 
-''' Main loop of the program '''
+'''Main loop of the program'''
 def main_loop():
     '''main processing loop'''
     if not mpstate.status.setup_mode and not opts.nowait:
@@ -902,13 +1357,12 @@ if __name__ == '__main__':
     parser.add_option("-c", "--continue", dest='continue_mode', action='store_true', default=False, help="continue logs")
     parser.add_option("--dialect",  default="ardupilotmega", help="MAVLink dialect")
     parser.add_option("--rtscts",  action='store_true', help="enable hardware RTS/CTS flow control")
-    parser.add_option("--moddebug",  type=int, help="module debug level", default=0)
     parser.add_option("--mission", dest="mission", help="mission name", default=None)
     parser.add_option("--daemon", action='store_true', help="run in daemon mode, do not start interactive shell")
     parser.add_option("--profile", action='store_true', help="run the Yappi python profiler")
     parser.add_option("--state-basedir", default=None, help="base directory for logs and aircraft directories")
     parser.add_option("--version", action='store_true', help="version information")
-    parser.add_option("--default-modules", default="autopilot,log,signing,param,tuneopt,arm,mode,calibration,rc,auxopt,misc,cmdlong,battery,terrain,output", help='default module list')
+    parser.add_option("--default-modules", default="autopilot,mode,battery", help='default module list')
 
     (opts, args) = parser.parse_args()
 
@@ -922,23 +1376,12 @@ if __name__ == '__main__':
         os.environ['MAVLINK20'] = '1'
     from pymavlink import mavutil, mavparm
     mavutil.set_dialect(opts.dialect)
-
-    #version information
-    if opts.version:
-        import pkg_resources
-        version = pkg_resources.require("mavproxy")[0].version
-        print "MAVProxy is a modular ground station using the mavlink protocol"
-        print "MAVProxy Version: " + version
-        sys.exit(1)
     
     # global mavproxy state
     mpstate = MPState()
     mpstate.status.exit = False
     mpstate.command_map = command_map
     mpstate.continue_mode = opts.continue_mode
-    # queues for logging
-    mpstate.logqueue = Queue.Queue()
-    mpstate.logqueue_raw = Queue.Queue()
 
 
     if opts.speech:
@@ -960,31 +1403,8 @@ if __name__ == '__main__':
 
     mpstate.rl = rline.rline("MAV> ", mpstate)
 
-    def quit_handler(signum = None, frame = None):
-        #print 'Signal handler called with signal', signum
-        if mpstate.status.exit:
-            print 'Clean shutdown impossible, forcing an exit'
-            sys.exit(0)
-        else:
-            mpstate.status.exit = True
-
-    # Listen for kill signals to cleanly shutdown modules
-    fatalsignals = [signal.SIGTERM]
-    try:
-        fatalsignals.append(signal.SIGHUP)
-        fatalsignals.append(signal.SIGQUIT)
-    except Exception:
-        pass
-    if opts.daemon: # SIGINT breaks readline parsing - if we are interactive, just let things die
-        fatalsignals.append(signal.SIGINT)
-
-    for sig in fatalsignals:
-        signal.signal(sig, quit_handler)
-
+  
     load_module('link', quiet=True)
-
-    mpstate.settings.source_system = opts.SOURCE_SYSTEM
-    mpstate.settings.source_component = opts.SOURCE_COMPONENT
 
     # open master link
     for mdev in opts.master:
@@ -1016,14 +1436,10 @@ if __name__ == '__main__':
     heartbeat_period = mavutil.periodic_event(1)
     heartbeat_check_period = mavutil.periodic_event(0.33)
 
-    mpstate.input_queue = Queue.Queue()
-    mpstate.input_count = 0
-    mpstate.empty_input_count = 0
+    mpstate.rl = rline("MAV> ")
     if opts.setup:
         mpstate.rl.set_prompt("")
 
-    # call this early so that logdir is setup based on --aircraft
-    (mpstate.status.logdir, logpath_telem, logpath_telem_raw) = log_paths()
 
     if not opts.setup:
         # some core functionality is in modules
@@ -1046,10 +1462,6 @@ if __name__ == '__main__':
         start_script = os.path.join(os.environ['HOME'], ".mavinit.scr")
         if os.path.exists(start_script):
             run_script(start_script)
-    if 'LOCALAPPDATA' in os.environ and not opts.setup:
-        start_script = os.path.join(os.environ['LOCALAPPDATA'], "MAVProxy", "mavinit.scr")
-        if os.path.exists(start_script):
-            run_script(start_script)
 
     if opts.aircraft is not None:
         start_script = os.path.join(opts.aircraft, "mavinit.scr")
@@ -1064,15 +1476,9 @@ if __name__ == '__main__':
             for c in cmds:
                 process_stdin(c)
 
-    if opts.profile:
-        import yappi    # We do the import here so that we won't barf if run normally and yappi not available
-        yappi.start()
-
-    # log all packets from the master, for later replay
-    open_telemetry_logs(logpath_telem, logpath_telem_raw)
-
     # run main loop as a thread
     mpstate.status.thread = threading.Thread(target=main_loop, name='main_loop')
+    mpstate.status.socket = threading.Thread(target=get_vision_data, name='get_vision_data')
     mpstate.status.thread.daemon = True
     mpstate.status.thread.start()
 
