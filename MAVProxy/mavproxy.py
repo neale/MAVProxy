@@ -25,6 +25,8 @@ for d in [ 'pymavlink',
 import select
 from modules.lib import textconsole
 from modules.lib import mp_settings
+from modules.lib import mp_module
+
 
 class MPSettings(object):
     def __init__(self):
