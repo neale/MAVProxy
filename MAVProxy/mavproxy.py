@@ -26,7 +26,7 @@ import select
 from modules.lib import textconsole
 from modules.lib import mp_settings
 from modules.lib import mp_module
-
+from modules import mavproxy_autopilot as autopilot
 
 class MPSettings(object):
     def __init__(self):
@@ -1406,7 +1406,7 @@ if __name__ == '__main__':
     parser.add_option("--profile", action='store_true', help="run the Yappi python profiler")
     parser.add_option("--state-basedir", default=None, help="base directory for logs and aircraft directories")
     parser.add_option("--version", action='store_true', help="version information")
-    parser.add_option("--default-modules", default="autopilot", help='default module list')
+    parser.add_option("--default-modules", default="autopilot,setref", help='default module list')
 
     (opts, args) = parser.parse_args()
 
