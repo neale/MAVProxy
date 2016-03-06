@@ -96,9 +96,6 @@ class MPStatus(object):
         self.msg_count = {}
         self.setup_mode = opts.setup
         self.mav_error = 0
-        self.altitude = 0
-        self.last_altitude_announce = 0.0
-        self.last_distance_announce = 0.0
         self.exit = False
         self.flightmode = 'MAV'
         self.last_mode_announce = 0
@@ -121,6 +118,25 @@ class MPStatus(object):
         self.y_center, self.last_y_center = 0, 0
         self.current_depth = 0
         self.depth_stream = collections.deque([0]*5, 5)
+        self.counters = {'MasterIn' : [], 'MasterOut' : 0, 'FGearIn' : 0, 'FGearOut' : 0, 'Slave' : 0}
+        self.wp_op = None
+        self.wp_save_filename = None
+        self.wploader = mavwp.MAVWPLoader()
+        self.fenceloader = mavwp.MAVFenceLoader()
+        self.loading_waypoints = False
+        self.loading_waypoint_lasttime = time.time()
+        self.target_system = 1
+        self.target_component = 1
+        self.speech = None
+        self.last_waypoint = 0
+        self.exit = False
+        self.override = [ 0 ] * 8
+        self.last_override = [ 0 ] * 8
+        self.override_counter = 0
+        self.last_heartbeat = 0
+        self.fence_enabled = False
+        self.last_fence_breach = 0
+        self.last_fence_status = 0
 
 
     def show(self, f, pattern=None):
@@ -1332,7 +1348,8 @@ if __name__ == '__main__':
                       default='mav.tlog')
     parser.add_option("-a", "--append-log", dest="append_log", help="Append to log files",
                       action='store_true', default=False)
-    parser.add_option("--quadcopter", dest="quadcopter", help="use quadcopter controls",
+    parser.add_option("--quadcopter", dest
+                      ="quadcopter", help="use quadcopter controls",
                       action='store_true', default=False)
     parser.add_option("--setup", dest="setup", help="start in setup mode",
                       action='store_true', default=False)
@@ -1389,6 +1406,7 @@ if __name__ == '__main__':
         # start the speech-dispatcher early, so it doesn't inherit any ports from
         # modules/mavutil
         load_module('speech')
+        say("STARTING")
 
     if not opts.master:
         serial_list = mavutil.auto_detect_serial(preferred_list=['*FTDI*',"*Arduino_Mega_2560*", "*3D_Robotics*", "*USB_to_UART*", '*PX4*', '*FMU*'])
