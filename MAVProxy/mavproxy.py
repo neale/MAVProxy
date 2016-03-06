@@ -1395,7 +1395,7 @@ if __name__ == '__main__':
     parser.add_option("--profile", action='store_true', help="run the Yappi python profiler")
     parser.add_option("--state-basedir", default=None, help="base directory for logs and aircraft directories")
     parser.add_option("--version", action='store_true', help="version information")
-    parser.add_option("--default-modules", default="autopilot,mode,battery", help='default module list')
+    parser.add_option("--default-modules", default="autopilot,mode,link,battery", help='default module list')
 
     (opts, args) = parser.parse_args()
 
@@ -1434,9 +1434,6 @@ if __name__ == '__main__':
     mpstate.status.target_component = opts.TARGET_COMPONENT
 
     mpstate.mav_master = []
-  
-    load_module('link', quiet=True)
-
     # open master link
     for mdev in opts.master:
         if not mpstate.module('link').link_add(mdev):
