@@ -927,11 +927,6 @@ def process_stdin(line):
     '''handle commands from user'''
     if line is None:
         sys.exit(0)
-
-    # allow for modules to override input handling
-    if mpstate.functions.input_handler is not None:
-          mpstate.functions.input_handler(line)
-          return
     
     line = line.strip()
 
