@@ -1179,6 +1179,34 @@ def get_vision_data():
     except:
         print("could not convert network data")
 
+def load_module(modname, quiet=False):
+    '''load a module'''
+    modpaths = ['MAVProxy.modules.mavproxy_%s' % modname, modname]
+    for (m,pm) in mpstate.modules:
+        if m.name == modname:
+            if not quiet:
+                print("module %s already loaded" % modname)
+            return False
+    for modpath in modpaths:
+        try:
+            m = import_package(modpath)
+            reload(m)
+            module = m.init(mpstate)
+            if isinstance(module, mp_module.MPModule):
+                mpstate.modules.append((module, m))
+                if not quiet:
+                    print("Loaded module %s" % (modname,))
+                return True
+            else:
+                ex = "%s.init did not return a MPModule instance" % modname
+                break
+        except ImportError as msg:
+            ex = msg
+            if mpstate.settings.moddebug > 1:
+                import traceback
+                print(traceback.format_exc())
+    print("Failed to load module: %s. Use 'set moddebug 3' in the MAVProxy console to enable traceback" % ex)
+    return False
 def periodic_tasks():
     '''run periodic checks'''
     if mpstate.status.setup_mode:
