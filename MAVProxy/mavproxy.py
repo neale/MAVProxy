@@ -1497,6 +1497,9 @@ if __name__ == '__main__':
                 raise RuntimeError("module %s already loaded" % (modname,))
             m.init(mpstate)
             mpstate.modules.append(m)
+        except:
+            print("could not load autopilot")
+
     if opts.map:
         process_stdin('module load map')
 
