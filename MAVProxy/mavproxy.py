@@ -7,7 +7,7 @@ Released under the GNU GPL version 3 or later
 
 '''
 
-import sys, os, struct, math, time, socket
+import sys, os, struct, math, time, socket, collections
 import fnmatch, errno, threading
 import serial, Queue, select
 
