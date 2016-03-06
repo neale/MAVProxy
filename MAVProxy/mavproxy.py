@@ -937,21 +937,20 @@ def process_stdin(line):
             mpstate.status.flightmode = "MAV"
             mpstate.rl.set_prompt("MAV> ")
             return
-        if line != '+++':
-            line += '\r'
-        for c in line:
-            time.sleep(0.01)
-            mpstate.master().write(c)
+        if line == '+++':
+            mpstate.master().write(line)
+        else:
+            mpstate.master().write(line + '\r')
         return
 
     if not line:
         return
 
-    args = shlex.split(line)
+    args = line.split()
     cmd = args[0]
     while cmd in mpstate.aliases:
         line = mpstate.aliases[cmd]
-        args = shlex.split(line) + args[1:]
+        args = line.split() + args[1:]
         cmd = args[0]
         
     if cmd == 'help':
