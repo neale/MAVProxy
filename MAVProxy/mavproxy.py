@@ -232,6 +232,21 @@ def get_usec():
     '''time since 1970 in microseconds'''
     return int(time.time() * 1.0e6)
 
+class rline(object):
+    '''async readline abstraction'''
+    def __init__(self, prompt):
+        import threading
+        self.prompt = prompt
+        self.line = None
+        try:
+            import readline
+        except Exception:
+            pass
+
+    def set_prompt(self, prompt):
+        if prompt != self.prompt:
+            self.prompt = prompt
+            sys.stdout.write(prompt)
 
 def get_mav_param(param, default=None):
     '''return a EEPROM parameter value'''
