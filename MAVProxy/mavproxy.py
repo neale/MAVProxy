@@ -1493,7 +1493,7 @@ if __name__ == '__main__':
     if opts.setup:
         mpstate.rl.set_prompt("")
 
-    if opts.console:
+    '''if opts.console:
         mods = ['console', 'autopilot']
         modpaths = ['MAVProxy.modules.mavproxy_'+modname for modname in mods]
 
@@ -1505,7 +1505,9 @@ if __name__ == '__main__':
                 mpstate.modules.append((module, m))
             except:
                 print("could not load module {}".format(path))
-        print("module state::  >>  {}\n".format(mpstate.modules))
+        print("module state::  >>  {}\n".format(mpstate.modules))'''
+    load_module('autopilot')
+    load_module('console')
 
     #if opts.map:
         #process_stdin('module load map')
