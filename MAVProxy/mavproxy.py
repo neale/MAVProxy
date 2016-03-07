@@ -1169,6 +1169,7 @@ def open_socket():
     time.sleep(0.2)
 
 def get_vision_data():
+    open_socket()
     while 1:
         try:
             sock_stream = mpstate.status.sock.recv(14)
@@ -1549,7 +1550,6 @@ if __name__ == '__main__':
         mpstate.status.thread.daemon = True
         mpstate.status.thread.start()
         mpstate.status.socket.start()
-        open_socket()
    
     # use main program for input. This ensures the terminal cleans
     # up on exit
