@@ -144,7 +144,7 @@ class MPState(object):
 
               MPSetting('moddebug', int, opts.moddebug, 'Module Debug Level', range=(0,3), increment=1, tab='Debug'),
               MPSetting('compdebug', int, 0, 'Computation Debug Mask', range=(0,3), tab='Debug'),
-              MPSetting('flushlogs', bool, False, 'Flush logs on every packet'),
+              #MPSetting('flushlogs', bool, False, 'Flush logs on every packet'),
               MPSetting('requireexit', bool, False, 'Require exit command'),
               MPSetting('wpupdates', bool, True, 'Announce waypoint updates'),
 
@@ -159,7 +159,7 @@ class MPState(object):
               MPSetting('source_component', int, 0, 'MAVLink Source component', range=(0,255), increment=1),
               MPSetting('target_system', int, 0, 'MAVLink target system', range=(0,255), increment=1),
               MPSetting('target_component', int, 0, 'MAVLink target component', range=(0,255), increment=1),
-              MPSetting('state_basedir', str, None, 'base directory for logs and aircraft directories'),
+              #MPSetting('state_basedir', str, None, 'base directory for logs and aircraft directories'),
               MPSetting('allow_unsigned', bool, True, 'whether unsigned packets will be accepted')
             ])
 
@@ -503,8 +503,8 @@ def process_master(m):
     if (mpstate.settings.compdebug & 1) != 0:
         return
 
-    if mpstate.logqueue_raw:
-        mpstate.logqueue_raw.put(str(s))
+    #if mpstate.logqueue_raw:
+    #    mpstate.logqueue_raw.put(str(s))
 
     if mpstate.status.setup_mode:
         if mpstate.system == 'Windows':
@@ -568,9 +568,8 @@ def mkdir_p(dir):
     mkdir_p(os.path.dirname(dir))
     os.mkdir(dir)
 
-def log_writer():
-    '''log writing thread'''
-    while True:
+'''def log_writer():
+   while True:
         mpstate.logfile_raw.write(mpstate.logqueue_raw.get())
         while not mpstate.logqueue_raw.empty():
             mpstate.logfile_raw.write(mpstate.logqueue_raw.get())
@@ -579,11 +578,10 @@ def log_writer():
         if mpstate.settings.flushlogs:
             mpstate.logfile.flush()
             mpstate.logfile_raw.flush()
-
+'''
 # If state_basedir is NOT set then paths for logs and aircraft
 # directories are relative to mavproxy's cwd
-def log_paths():
-    '''Returns tuple (logdir, telemetry_log_filepath, raw_telemetry_log_filepath)'''
+'''def log_paths():
     if opts.aircraft is not None:
         if opts.mission is not None:
             print(opts.mission)
@@ -621,7 +619,6 @@ def log_paths():
 
 
 def open_telemetry_logs(logpath_telem, logpath_telem_raw):
-    '''open log files'''
     if opts.append_log or opts.continue_mode:
         mode = 'a'
     else:
@@ -637,7 +634,7 @@ def open_telemetry_logs(logpath_telem, logpath_telem_raw):
     t = threading.Thread(target=log_writer, name='log_writer')
     t.daemon = True
     t.start()
-
+'''
 def set_stream_rates():
     '''set mavlink stream rates'''
     if (not msg_period.trigger() and
@@ -893,10 +890,10 @@ if __name__ == '__main__':
                       default=0, help='MAVLink target master system')
     parser.add_option("--target-component", dest='TARGET_COMPONENT', type='int',
                       default=0, help='MAVLink target master component')
-    parser.add_option("--logfile", dest="logfile", help="MAVLink master logfile",
-                      default='mav.tlog')
-    parser.add_option("-a", "--append-log", dest="append_log", help="Append to log files",
-                      action='store_true', default=False)
+    #parser.add_option("--logfile", dest="logfile", help="MAVLink master logfile",
+    #                  default='mav.tlog')
+    #parser.add_option("-a", "--append-log", dest="append_log", help="Append to log files",
+    #                  action='store_true', default=False)
     parser.add_option("--quadcopter", dest="quadcopter", help="use quadcopter controls",
                       action='store_true', default=False)
     parser.add_option("--setup", dest="setup", help="start in setup mode",
@@ -927,9 +924,9 @@ if __name__ == '__main__':
     parser.add_option("--mission", dest="mission", help="mission name", default=None)
     parser.add_option("--daemon", action='store_true', help="run in daemon mode, do not start interactive shell")
     parser.add_option("--profile", action='store_true', help="run the Yappi python profiler")
-    parser.add_option("--state-basedir", default=None, help="base directory for logs and aircraft directories")
+    #parser.add_option("--state-basedir", default=None, help="base directory for logs and aircraft directories")
     parser.add_option("--version", action='store_true', help="version information")
-    parser.add_option("--default-modules", default="log,signing,wp,rally,fence,param,relay,tuneopt,arm,mode,calibration,rc,auxopt,misc,cmdlong,battery,terrain,output", help='default module list')
+    parser.add_option("--default-modules", default="signing,wp,rally,fence,param,relay,tuneopt,arm,mode,calibration,rc,auxopt,misc,cmdlong,battery,terrain,output", help='default module list')
 
     (opts, args) = parser.parse_args()
 
@@ -958,8 +955,8 @@ if __name__ == '__main__':
     mpstate.command_map = command_map
     mpstate.continue_mode = opts.continue_mode
     # queues for logging
-    mpstate.logqueue = Queue.Queue()
-    mpstate.logqueue_raw = Queue.Queue()
+    #mpstate.logqueue = Queue.Queue()
+    #mpstate.logqueue_raw = Queue.Queue()
 
 
     if opts.speech:
@@ -1044,7 +1041,7 @@ if __name__ == '__main__':
         mpstate.rl.set_prompt("")
 
     # call this early so that logdir is setup based on --aircraft
-    (mpstate.status.logdir, logpath_telem, logpath_telem_raw) = log_paths()
+    #(mpstate.status.logdir, logpath_telem, logpath_telem_raw) = log_paths()
 
     if not opts.setup:
         # some core functionality is in modules
@@ -1090,7 +1087,7 @@ if __name__ == '__main__':
         yappi.start()
 
     # log all packets from the master, for later replay
-    open_telemetry_logs(logpath_telem, logpath_telem_raw)
+    #open_telemetry_logs(logpath_telem, logpath_telem_raw)
 
     # run main loop as a thread
     mpstate.status.thread = threading.Thread(target=main_loop)
