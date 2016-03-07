@@ -96,7 +96,6 @@
     <Compile Include="MAVProxy\modules\lib\__init__.py" />
     <Compile Include="MAVProxy\modules\mavproxy_antenna.py" />
     <Compile Include="MAVProxy\modules\mavproxy_arm.py" />
-    <Compile Include="MAVProxy\modules\mavproxy_autopilot.py" />
     <Compile Include="MAVProxy\modules\mavproxy_auxopt.py" />
     <Compile Include="MAVProxy\modules\mavproxy_battery.py" />
     <Compile Include="MAVProxy\modules\mavproxy_calibration.py" />
@@ -143,7 +142,6 @@
     <Compile Include="MAVProxy\modules\mavproxy_relay.py" />
     <Compile Include="MAVProxy\modules\mavproxy_sensors.py" />
     <Compile Include="MAVProxy\modules\mavproxy_serial.py" />
-    <Compile Include="MAVProxy\modules\mavproxy_setref.py" />
     <Compile Include="MAVProxy\modules\mavproxy_smartcamera\sc_config.py" />
     <Compile Include="MAVProxy\modules\mavproxy_smartcamera\sc_main.py" />
     <Compile Include="MAVProxy\modules\mavproxy_smartcamera\sc_SonyQX1.py" />
