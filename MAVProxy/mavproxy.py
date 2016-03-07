@@ -1504,9 +1504,8 @@ if __name__ == '__main__':
             m = import_package(modpath)
             if m in mpstate.modules:
                 raise RuntimeError("module %s already loaded" % (modname,))
-            m.init(mpstate)
-            mpstate.modules.append(m)
-            print(mpstate.modules)
+            module = m.init(mpstate)
+            mpstate.modules.append((module, m))
         except:
             print("could not load autopilot")
 
