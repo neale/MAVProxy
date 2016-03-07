@@ -1495,19 +1495,17 @@ if __name__ == '__main__':
 
     if opts.console:
         process_stdin('module load console')
-        modname = 'autopilot'
-        modpaths = ['MAVProxy.modules.mavproxy_%s' % modname, modname]
-        
-        modname = 'autopilot'
-        modpath = 'mavproxy_%s' % (modname,)
-        try:
-            m = import_package(modpath)
-            if m in mpstate.modules:
-                raise RuntimeError("module %s already loaded" % (modname,))
-            module = m.init(mpstate)
-            mpstate.modules.append((module, m))
-        except:
-            print("could not load autopilot")
+        modname = ['console', 'autopilot']
+        modpaths = ['MAVProxy.modules.mavproxy_'+modname for modname in mods]
+
+        for path in modpaths:      
+            try:
+                m = import_package(path)
+                reload(m)
+                module = m.init(mpstate)
+                mpstate.modules.append((module, m))
+            except:
+                print("could not load module {}".format(path))
 
     if opts.map:
         process_stdin('module load map')
