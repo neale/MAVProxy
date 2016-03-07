@@ -81,6 +81,7 @@ class MPStatus(object):
              self.override_period = mavutil.periodic_event(20)
         else:
              self.override_period = mavutil.periodic_event(1)
+
     def show(self, f, pattern=None):
         '''write status to status.txt'''
         if pattern is None:
@@ -387,7 +388,7 @@ def cmd_alias(args):
         print(usage)
         return
 
-def send_rc_override(self):
+def send_rc_override():
     '''send RC override packet'''
     if mpstate.status.sitl_output:
         buf = struct.pack('<HHHHHHHHHHHHHHHH',
@@ -400,7 +401,7 @@ def send_rc_override(self):
                                                         *chan8)
 
 
-def set_override(self, newchannels):
+def set_override(newchannels):
     '''this is a public method for use by drone API or other scripting'''
     mpstate.status.override = newchannels
     mpstate.status.override_counter = 10
