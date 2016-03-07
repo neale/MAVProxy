@@ -140,6 +140,8 @@ class MPStatus(object):
         self.fence_enabled = False
         self.last_fence_breach = 0
         self.last_fence_status = 0
+        self.mpstate.status.sock_failure_data = False
+
 
 
     def show(self, f, pattern=None):
@@ -1167,13 +1169,21 @@ def open_socket():
     time.sleep(0.2)
 
 def get_vision_data():
-    sock_stream = mpstate.status.sock.recv(14)
+    try:
+        sock_stream = mpstate.status.sock.recv(14)
+    except:
+        if not mpstate.status.sock_failure_data:
+            print("Socket data could not be resolved, vision system offline")
+        mpstate.status.sock_failure_data = True
+ 
     try:
         data_string = sock_stream.split(',')
         mpstate.status.current_depth  = int(data_string[0])
         mpstate.status.xcenter        = int(data_string[1])
         mpstate.status.ycenter        = int(''.join([i for i in data_string[2] if str.isdigit(i)]))
         mpstate.status.depth_stream.appendleft(mpstate.status.current_depth)
+        mpstate.status.sock_failure_data = False
+
     except:
         print("could not convert network data")
 
