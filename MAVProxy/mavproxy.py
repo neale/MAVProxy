@@ -69,7 +69,7 @@ class MPStatus(object):
         self.current_depth = 0
         self.xcenter = 0   
         self.ycenter = 0   
-        self.depth_stream = collection.deque([0]*5, 5)
+        self.depth_stream = collections.deque([0]*5, 5)
         self.sock_failure_data = False
 
     def show(self, f, pattern=None):
