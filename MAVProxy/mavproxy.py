@@ -396,8 +396,8 @@ def send_rc_override():
         mpstate.status.sitl_output.write(buf)
     else:
         chan8 = mpstate.status.override[:8]
-        mpstate.status.master.mav.rc_channels_override_send(mpstate.status.target_system,
-                                                        mpstate.status.target_component,
+        mpstate.master.mav.rc_channels_override_send(mpstate.settings.target_system,
+                                                        mpstate.settings.target_component,
                                                         *chan8)
 
 
