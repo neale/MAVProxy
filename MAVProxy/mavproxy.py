@@ -72,7 +72,15 @@ class MPStatus(object):
         self.depth_stream = collections.deque([0]*5, 5)
         self.sock_failure_data = False
         self.socket_open = False
-
+        # integrate rc module
+        self.override = [ 0 ] * 16
+        self.last_override = [ 0 ] * 16
+        self.override_counter = 0
+        self.sitl_output = False
+        if  mpstate.status.sitl_output:
+             mpstate.status.override_period = mavutil.periodic_event(20)
+        else:
+             mpstate.status.override_period = mavutil.periodic_event(1)
     def show(self, f, pattern=None):
         '''write status to status.txt'''
         if pattern is None:
@@ -379,6 +387,47 @@ def cmd_alias(args):
         print(usage)
         return
 
+def send_rc_override(self):
+    '''send RC override packet'''
+    if mpstate.status.sitl_output:
+        buf = struct.pack('<HHHHHHHHHHHHHHHH',
+                            *self.override)
+        mpstate.status.sitl_output.write(buf)
+    else:
+        chan8 = mpstate.status.override[:8]
+        mpstate.status.master.mav.rc_channels_override_send(mpstate.status.target_system,
+                                                        mpstate.status.target_component,
+                                                        *chan8)
+
+
+def set_override(self, newchannels):
+    '''this is a public method for use by drone API or other scripting'''
+    mpstate.status.override = newchannels
+    mpstate.status.override_counter = 10
+    send_rc_override()
+
+
+def cmd_rc(args):
+    '''handle RC value override'''
+    if len(args) != 2:
+        print("Usage: rc <channel|all> <pwmvalue>")
+        return
+    value = int(args[1])
+    if value > 65535 or value < -1:
+        raise ValueError("PWM value must be a positive integer between 0 and 65535")
+    if value == -1:
+        value = 65535
+    channels = mpstate.status.override
+    if args[0] == 'all':
+        for i in range(16):
+            channels[i] = value
+    else:
+        channel = int(args[0])
+        if channel < 1 or channel > 16:
+            print("Channel must be between 1 and 8 or 'all'")
+            return
+        channels[channel - 1] = value
+    set_override(channels)
 
 def clear_zipimport_cache():
     """Clear out cached entries from _zip_directory_cache.
@@ -419,7 +468,8 @@ command_map = {
     'set'     : (cmd_set,      'mavproxy settings'),
     'watch'   : (cmd_watch,    'watch a MAVLink pattern'),
     'module'  : (cmd_module,   'module commands'),
-    'alias'   : (cmd_alias,    'command aliases')
+    'alias'   : (cmd_alias,    'command aliases'),
+    'rc'      : (cmd_rc,       'give rc channel commands')
     }
 
 def process_stdin(line):
@@ -694,7 +744,14 @@ def periodic_tasks():
         check_link_status()
 
     set_stream_rates()
-
+    if mpstate.status.override_period.trigger():
+        if (mpstate.status.override != [ 0 ] * 16 or
+            mpstate.status.override != mpstate.status.last_override or
+            mpstate.status.override_counter > 0):
+            mpstate.status.last_override = mpstate.status.override[:]
+            send_rc_override()
+            if mpstate.status.override_counter > 0:
+                mpstate.status.override_counter -= 1
     # call optional module idle tasks. These are called at several hundred Hz
     for (m,pm) in mpstate.modules:
         if hasattr(m, 'idle_task'):
