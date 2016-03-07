@@ -1507,8 +1507,8 @@ if __name__ == '__main__':
                 print("could not load module {}".format(path))
         print("module state::  >>  {}\n".format(mpstate.modules))
 
-    if opts.map:
-        process_stdin('module load map')
+    #if opts.map:
+        #process_stdin('module load map')
 
     for module in opts.load_module:
         modlist = module.split(',')
