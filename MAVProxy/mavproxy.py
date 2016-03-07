@@ -818,7 +818,7 @@ def open_socket():
 def get_vision_data():
     
     while 1:
-        if not socket_open:
+        if not mpstate.status.socket_open:
             open_socket()
         try:
             sock_stream = mpstate.status.sock.recv(14)
