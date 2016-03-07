@@ -924,7 +924,7 @@ if __name__ == '__main__':
     parser.add_option("--mission", dest="mission", help="mission name", default=None)
     parser.add_option("--daemon", action='store_true', help="run in daemon mode, do not start interactive shell")
     parser.add_option("--profile", action='store_true', help="run the Yappi python profiler")
-    #parser.add_option("--state-basedir", default=None, help="base directory for logs and aircraft directories")
+    parser.add_option("--state-basedir", default=None, help="base directory for logs and aircraft directories")
     parser.add_option("--version", action='store_true', help="version information")
     parser.add_option("--default-modules", default="signing,wp,rally,fence,param,relay,tuneopt,arm,mode,calibration,rc,auxopt,misc,cmdlong,battery,terrain,output", help='default module list')
 
