@@ -1237,7 +1237,7 @@ def periodic_tasks():
     set_stream_rates()
 
     # call optional module idle tasks. These are called at several hundred Hz
-    print("DEBUG: ",mpstate.modules,'\n')
+    print('DEBUG: {}\n'.format(mpstate.modules))
     for (m,pm) in mpstate.modules:
         if hasattr(m, 'idle_task'):
             try:
