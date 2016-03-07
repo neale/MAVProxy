@@ -802,14 +802,14 @@ def main_loop():
                     mpstate.select_extra.pop(fd)
 
 def open_socket():
-    print("attemping connection to vision system\n")
     port = 9999
     mpstate.status.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         mpstate.status.sock.connect(('localhost', port))
         mpstate.status.socket_open = True
     except socket.error:
-        print("socket not availible\n")
+        if not mpstate.status.sock_failure_data:
+            print("socket not availible\n")
         mpstate.status.socket_open = False
     socket.timeout(0.1)
     print("connecting to socket: {}\n".format(port))
