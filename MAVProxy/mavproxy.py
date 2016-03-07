@@ -140,7 +140,7 @@ class MPStatus(object):
         self.fence_enabled = False
         self.last_fence_breach = 0
         self.last_fence_status = 0
-        self.status.sock_failure_data = False
+        self.sock_failure_data = False
 
 
 
