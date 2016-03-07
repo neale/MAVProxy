@@ -1329,14 +1329,15 @@ def main_loop():
 ''' Other main loop found at main_loop() '''
 def input_loop():
     '''wait for user input'''
-    while mpstate.status.exit != True:
+    while True:
+        while mpstate.rl.line is not None:
+            time.sleep(0.01)
         try:
-            if mpstate.status.exit != True:
-                line = raw_input(mpstate.rl.prompt)
+            line = raw_input(mpstate.rl.prompt)
         except EOFError:
             mpstate.status.exit = True
             sys.exit(1)
-        mpstate.input_queue.put(line)
+        mpstate.rl.line = line
 
 def run_script(scriptfile):
     '''run a script file'''
