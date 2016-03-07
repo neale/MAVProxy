@@ -806,13 +806,14 @@ def open_socket():
     mpstate.status.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         mpstate.status.sock.connect(('localhost', port))
-        mpstate.status.socket_open = True
+        mpstate.status.socket_open = True    
+        print("connecting to socket: {}\n".format(port))
+
     except socket.error:
         if not mpstate.status.sock_failure_data:
             print("socket not availible\n")
         mpstate.status.socket_open = False
     socket.timeout(0.1)
-    print("connecting to socket: {}\n".format(port))
     time.sleep(0.2)
 
 def get_vision_data():
