@@ -1397,7 +1397,7 @@ if __name__ == '__main__':
     parser.add_option("--aircraft", dest="aircraft", help="aircraft name", default=None)
     parser.add_option("--cmd", dest="cmd", help="initial commands", default=None, action='append')
     parser.add_option("--console", action='store_true', help="use GUI console")
-    parser.add_option("--map", action='store_true', help="load map module")
+    #parser.add_option("--map", action='store_true', help="load map module")
     parser.add_option(
         '--load-module',
         action='append',
@@ -1494,7 +1494,6 @@ if __name__ == '__main__':
         mpstate.rl.set_prompt("")
 
     if opts.console:
-        process_stdin('module load console')
         mods = ['console', 'autopilot']
         modpaths = ['MAVProxy.modules.mavproxy_'+modname for modname in mods]
 
@@ -1506,6 +1505,7 @@ if __name__ == '__main__':
                 mpstate.modules.append((module, m))
             except:
                 print("could not load module {}".format(path))
+        print("module state::  >>  {}\n".format(mpstate.modules))
 
     if opts.map:
         process_stdin('module load map')
