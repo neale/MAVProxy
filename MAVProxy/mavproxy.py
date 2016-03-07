@@ -1495,7 +1495,7 @@ if __name__ == '__main__':
 
     if opts.console:
         process_stdin('module load console')
-        modname = ['console', 'autopilot']
+        mods = ['console', 'autopilot']
         modpaths = ['MAVProxy.modules.mavproxy_'+modname for modname in mods]
 
         for path in modpaths:      
