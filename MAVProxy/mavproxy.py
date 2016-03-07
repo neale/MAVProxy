@@ -1185,7 +1185,10 @@ def get_vision_data():
         mpstate.status.sock_failure_data = False
 
     except:
-        print("could not convert network data")
+        if not mpstate.status.sock_failure_data:
+            print("could not convert network data")
+            if sock_stream:
+                print("data printback: ", sock_stream)
 
 def load_module(modname, quiet=False):
     '''load a module'''
