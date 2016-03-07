@@ -77,10 +77,10 @@ class MPStatus(object):
         self.last_override = [ 0 ] * 16
         self.override_counter = 0
         self.sitl_output = False
-        if  mpstate.status.sitl_output:
-             mpstate.status.override_period = mavutil.periodic_event(20)
+        if  self.sitl_output:
+             self.override_period = mavutil.periodic_event(20)
         else:
-             mpstate.status.override_period = mavutil.periodic_event(1)
+             self.override_period = mavutil.periodic_event(1)
     def show(self, f, pattern=None):
         '''write status to status.txt'''
         if pattern is None:
