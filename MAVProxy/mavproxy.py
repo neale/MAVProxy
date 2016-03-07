@@ -1157,15 +1157,15 @@ def send_heartbeat(master):
         master.mav.heartbeat_send(MAV_GROUND, MAV_AUTOPILOT_NONE)
 
 def open_socket():
-    print("attemping connection to vision system")
+    print("attemping connection to vision system\n")
     port = 9999
     mpstate.status.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         mpstate.status.sock.connect(('localhost', port))
     except socket.error:
-        print("socket not availible")
+        print("socket not availible\n")
     socket.timeout(0.1)
-    print("connecting to socket: ", port)
+    print("connecting to socket: {}\n".format(port))
     time.sleep(0.2)
 
 def get_vision_data():
@@ -1173,7 +1173,7 @@ def get_vision_data():
         sock_stream = mpstate.status.sock.recv(14)
     except:
         if not mpstate.status.sock_failure_data:
-            print("Socket data could not be resolved, vision system offline")
+            print("Socket data could not be resolved, vision system offline\n")
         mpstate.status.sock_failure_data = True
  
     try:
@@ -1186,9 +1186,9 @@ def get_vision_data():
 
     except:
         if not mpstate.status.sock_failure_data:
-            print("could not convert network data")
+            print("could not convert network data\n")
             if sock_stream:
-                print("data printback: ", sock_stream)
+                print("data printback: {}\n".format(sock_stream))
 
 def load_module(modname, quiet=False):
     '''load a module'''
@@ -1237,7 +1237,7 @@ def periodic_tasks():
     set_stream_rates()
 
     # call optional module idle tasks. These are called at several hundred Hz
-    print("DEBUG: ",mpstate.modules)
+    print("DEBUG: ",mpstate.modules,'\n')
     for (m,pm) in mpstate.modules:
         if hasattr(m, 'idle_task'):
             try:
@@ -1420,7 +1420,7 @@ if __name__ == '__main__':
 
     # warn people about ModemManager which interferes badly with APM and Pixhawk
     if os.path.exists("/usr/sbin/ModemManager"):
-        print("WARNING: You should uninstall ModemManager as it conflicts with APM and Pixhawk")
+        print("WARNING: You should uninstall ModemManager as it conflicts with APM and Pixhawk\n")
 
     if opts.mav09:
         os.environ['MAVLINK09'] = '1'
