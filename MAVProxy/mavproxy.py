@@ -1535,53 +1535,33 @@ if __name__ == '__main__':
             for c in cmds:
                 process_stdin(c)
 
-    open_socket()
-
-    # run main loop as a thread
-    mpstate.status.thread = threading.Thread(target=main_loop, name='main_loop')
-    mpstate.status.socket = threading.Thread(target=get_vision_data, name='get_vision_data')
-    mpstate.status.thread.daemon = True
-    mpstate.status.socket.daemon = True
-    mpstate.status.thread.start()
-    mpstate.status.socket.start()
-
-
     # open socket to port 9999 to import vision data
     # use main program for input. This ensures the terminal cleans
     # up on exit
-    while (mpstate.status.exit != True):
+    if not opts.embedded:
+        mpstate.status.thread = threading.Thread(target=main_loop)
+        mpstate.status.socket = threading.Thread(target=get_vision_data, name='get_vision_data')
+        mpstate.status.thread.daemon = True
+        mpstate.status.thread.daemon = True
+        mpstate.status.thread.start()
+        mpstate.status.socket.start()
+        open_socket()
+   
+    # use main program for input. This ensures the terminal cleans
+    # up on exit
         try:
-            if opts.daemon:
-                time.sleep(0.1)
-            else:
-                input_loop()
+            input_loop()
         except KeyboardInterrupt:
-            if mpstate.settings.requireexit:
-                print("Interrupt caught.  Use 'exit' to quit MAVProxy.")
-
-                #Just lost the map and console, get them back:
-                for (m,pm) in mpstate.modules:
-                    if m.name in ["map", "console"]:
-                        if hasattr(m, 'unload'):
-                            try:
-                                m.unload()
-                            except Exception:
-                                pass
-                        reload(m)
-                        m.init(mpstate)
-
-            else:
-                mpstate.status.exit = True
-                sys.exit(1)
-
-    if opts.profile:
-        yappi.get_func_stats().print_all()
-        yappi.get_thread_stats().print_all()
-
-    #this loop executes after leaving the above loop and is for cleanup on exit
-    for (m,pm) in mpstate.modules:
-        if hasattr(m, 'unload'):
-            print("Unloading module %s" % m.name)
-            m.unload()
-    socket.close()
-    sys.exit(1)
+            print("exiting")
+            mpstate.status.exit = True
+            socket.close()
+            sys.exit(1)
+    else:
+        try:
+            main_loop()
+        except KeyboardInterrupt:
+            print("exiting")
+            mpstate.status.exit = True
+            socket.close()
+            sys.exit(1)
+    
