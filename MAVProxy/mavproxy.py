@@ -1557,7 +1557,7 @@ if __name__ == '__main__':
         except KeyboardInterrupt:
             print("exiting")
             mpstate.status.exit = True
-            socket.close()
+            mpstate.status.sock.close()
             sys.exit(1)
     else:
         try:
@@ -1565,6 +1565,6 @@ if __name__ == '__main__':
         except KeyboardInterrupt:
             print("exiting")
             mpstate.status.exit = True
-            socket.close()
+            mpstate.status.sock.close()
             sys.exit(1)
     
