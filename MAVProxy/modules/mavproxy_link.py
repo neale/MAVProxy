@@ -189,11 +189,11 @@ class LinkModule(mp_module.MPModule):
                 self.mpstate.console.writeln('> '+ str(m))
 
         mtype = m.get_type()
-        if mtype != 'BAD_DATA' and self.mpstate.logqueue:
+        '''if mtype != 'BAD_DATA' and self.mpstate.logqueue:
             usec = self.get_usec()
             usec = (usec & ~3) | 3 # linknum 3
             self.mpstate.logqueue.put(str(struct.pack('>Q', usec) + m.get_msgbuf()))
-
+        '''
     def handle_msec_timestamp(self, m, master):
         '''special handling for MAVLink packets with a time_boot_ms field'''
 
@@ -255,12 +255,12 @@ class LinkModule(mp_module.MPModule):
         mtype = m.get_type()
 
         # and log them
-        if mtype not in dataPackets and self.mpstate.logqueue:
+        '''if mtype not in dataPackets and self.mpstate.logqueue:
             # put link number in bottom 2 bits, so we can analyse packet
             # delay in saved logs
             usec = self.get_usec()
             usec = (usec & ~3) | master.linknum
-            self.mpstate.logqueue.put(str(struct.pack('>Q', usec) + m.get_msgbuf()))
+            self.mpstate.logqueue.put(str(struct.pack('>Q', usec) + m.get_msgbuf()))'''
 
         # keep the last message of each type around
         self.status.msgs[m.get_type()] = m
