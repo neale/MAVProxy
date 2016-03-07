@@ -71,6 +71,7 @@ class MPStatus(object):
         self.ycenter = 0   
         self.depth_stream = collections.deque([0]*5, 5)
         self.sock_failure_data = False
+        self.socket_open = False
 
     def show(self, f, pattern=None):
         '''write status to status.txt'''
@@ -806,15 +807,19 @@ def open_socket():
     mpstate.status.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         mpstate.status.sock.connect(('localhost', port))
+        mpstate.status.socket_open = True
     except socket.error:
         print("socket not availible\n")
+        mpstate.status.socket_open = False
     socket.timeout(0.1)
     print("connecting to socket: {}\n".format(port))
     time.sleep(0.2)
 
 def get_vision_data():
-    open_socket()
+    
     while 1:
+        if not socket_open:
+            open_socket()
         try:
             sock_stream = mpstate.status.sock.recv(14)
         except:
