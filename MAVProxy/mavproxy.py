@@ -49,7 +49,7 @@ class MPStatus(object):
         self.last_altitude_announce = 0.0
         self.last_distance_announce = 0.0
         self.exit = False
-        self.flightmode = 'MAV'
+        self.flightmode = 'ALT_HOLD'
         self.last_mode_announce = 0
         self.logdir = None
         self.last_heartbeat = 0
@@ -430,6 +430,18 @@ def cmd_rc(args):
         channels[channel - 1] = value
     set_override(channels)
 
+def cmd_vision(args):
+
+    try:
+        print ("current depth to object : {}\nCurrent relative center point : ({},{})\nSocket open : {}\n".format(
+            mpstate.status.current_depth,
+            mpstate.status.xcenter, 
+            mpstate.status.ycenter,   
+            mpstate.status.socket_open
+            ))
+    except:
+        print("data not availible\n")
+
 def clear_zipimport_cache():
     """Clear out cached entries from _zip_directory_cache.
     See http://www.digi.com/wiki/developer/index.php/Error_messages"""
@@ -470,7 +482,8 @@ command_map = {
     'watch'   : (cmd_watch,    'watch a MAVLink pattern'),
     'module'  : (cmd_module,   'module commands'),
     'alias'   : (cmd_alias,    'command aliases'),
-    'rc'      : (cmd_rc,       'give rc channel commands')
+    'rc'      : (cmd_rc,       'give rc channel commands'),
+    'pvision' : (cmd_pvision,  'prints out user data related to vision system')
     }
 
 def process_stdin(line):
@@ -620,73 +633,6 @@ def mkdir_p(dir):
     mkdir_p(os.path.dirname(dir))
     os.mkdir(dir)
 
-'''def log_writer():
-   while True:
-        mpstate.logfile_raw.write(mpstate.logqueue_raw.get())
-        while not mpstate.logqueue_raw.empty():
-            mpstate.logfile_raw.write(mpstate.logqueue_raw.get())
-        while not mpstate.logqueue.empty():
-            mpstate.logfile.write(mpstate.logqueue.get())
-        if mpstate.settings.flushlogs:
-            mpstate.logfile.flush()
-            mpstate.logfile_raw.flush()
-'''
-# If state_basedir is NOT set then paths for logs and aircraft
-# directories are relative to mavproxy's cwd
-'''def log_paths():
-    if opts.aircraft is not None:
-        if opts.mission is not None:
-            print(opts.mission)
-            dirname = "%s/logs/%s/Mission%s" % (opts.aircraft, time.strftime("%Y-%m-%d"), opts.mission)
-        else:
-            dirname = "%s/logs/%s" % (opts.aircraft, time.strftime("%Y-%m-%d"))
-        # dirname is currently relative.  Possibly add state_basedir:
-        if mpstate.settings.state_basedir is not None:
-            dirname = os.path.join(mpstate.settings.state_basedir,dirname)
-        mkdir_p(dirname)
-        highest = None
-        for i in range(1, 10000):
-            fdir = os.path.join(dirname, 'flight%u' % i)
-            if not os.path.exists(fdir):
-                break
-            highest = fdir
-        if mpstate.continue_mode and highest is not None:
-            fdir = highest
-        elif os.path.exists(fdir):
-            print("Flight logs full")
-            sys.exit(1)
-        logname = 'flight.tlog'
-        logdir = fdir
-    else:
-        logname = os.path.basename(opts.logfile)
-        dir_path = os.path.dirname(opts.logfile)
-        if not os.path.isabs(dir_path) and mpstate.settings.state_basedir is not None:
-            dir_path = os.path.join(mpstate.settings.state_basedir,dir_path)
-        logdir = dir_path
-
-    mkdir_p(logdir)
-    return (logdir,
-            os.path.join(logdir, logname),
-            os.path.join(logdir, logname + '.raw'))
-
-
-def open_telemetry_logs(logpath_telem, logpath_telem_raw):
-    if opts.append_log or opts.continue_mode:
-        mode = 'a'
-    else:
-        mode = 'w'
-    mpstate.logfile = open(logpath_telem, mode=mode)
-    mpstate.logfile_raw = open(logpath_telem_raw, mode=mode)
-    print("Log Directory: %s" % mpstate.status.logdir)
-    print("Telemetry log: %s" % logpath_telem)
-
-    # use a separate thread for writing to the logfile to prevent
-    # delays during disk writes (important as delays can be long if camera
-    # app is running)
-    t = threading.Thread(target=log_writer, name='log_writer')
-    t.daemon = True
-    t.start()
-'''
 def set_stream_rates():
     '''set mavlink stream rates'''
     if (not msg_period.trigger() and
