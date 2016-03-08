@@ -474,16 +474,17 @@ def import_package(name):
 
 
 command_map = {
-    'script'  : (cmd_script,   'run a script of MAVProxy commands'),
-    'setup'   : (cmd_setup,    'go into setup mode'),
-    'reset'   : (cmd_reset,    'reopen the connection to the MAVLink master'),
-    'status'  : (cmd_status,   'show status'),
-    'set'     : (cmd_set,      'mavproxy settings'),
-    'watch'   : (cmd_watch,    'watch a MAVLink pattern'),
-    'module'  : (cmd_module,   'module commands'),
-    'alias'   : (cmd_alias,    'command aliases'),
-    'rc'      : (cmd_rc,       'give rc channel commands'),
-    'pvision' : (cmd_pvision,  'prints out user data related to vision system')
+    'script'    : (cmd_script,   'run a script of MAVProxy commands'),
+    'setup'     : (cmd_setup,    'go into setup mode'),
+    'reset'     : (cmd_reset,    'reopen the connection to the MAVLink master'),
+    'status'    : (cmd_status,   'show status'),
+    'set'       : (cmd_set,      'mavproxy settings'),
+    'watch'     : (cmd_watch,    'watch a MAVLink pattern'),
+    'module'    : (cmd_module,   'module commands'),
+    'alias'     : (cmd_alias,    'command aliases'),
+    'rc'        : (cmd_rc,       'give rc channel commands'),
+    'pvision'   : (cmd_pvision,  'prints out user data related to vision system'),
+    'autopilot' : (cmd_ap,       'start the autopilot') # altitude only for now
     }
 
 def process_stdin(line):
@@ -819,6 +820,32 @@ def open_socket():
         mpstate.status.socket_open = False
     socket.timeout(0.1)
     time.sleep(0.2)
+
+def cmd_ap(args):
+    self.auto = True
+    average = sum(mpstate.status.depth_stream)/5
+
+    """ Set PWM autopilot PID """
+    if average <= 920 and average >= 880:
+        if mpstate.status.pwm_val is not 1500:
+            print("Stabilizing")
+            mpstate.status.pwm_val = 1500
+
+    # Coptor isn't high enough
+
+    elif average < 880:
+        if mpstate.status.pwm_val is not 1580:
+            print("Throttling up")
+            mpstate.status.pwm_val = 1570
+
+
+    # Coptor is higher than we want     
+    elif average > 920:
+        if mpstate.status.pwm_val is not 1300:
+            print("Throttling down")
+            mpstate.status.pwm_val = 1300
+
+    cmd_rc([3, self.pwm_val])
 
 def get_vision_data():
     
