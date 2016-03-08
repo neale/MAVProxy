@@ -430,7 +430,7 @@ def cmd_rc(args):
         channels[channel - 1] = value
     set_override(channels)
 
-def cmd_vision(args):
+def cmd_pvision(args):
 
     try:
         print ("current depth to object : {}\nCurrent relative center point : ({},{})\nSocket open : {}\n".format(
