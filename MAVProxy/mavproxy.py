@@ -72,6 +72,7 @@ class MPStatus(object):
         self.depth_stream = collections.deque([0]*5, 5)
         self.sock_failure_data = False
         self.socket_open = False
+        self.pwm_val = 1500
         # integrate rc module
         self.override = [ 0 ] * 16
         self.last_override = [ 0 ] * 16
@@ -441,6 +442,34 @@ def cmd_pvision(args):
             ))
     except:
         print("data not availible\n")
+
+
+def cmd_ap(args):
+
+    average = sum(mpstate.status.depth_stream)/5
+
+    """ Set PWM autopilot PID """
+    if average <= 920 and average >= 880:
+        if mpstate.status.pwm_val is not 1500:
+            print("Stabilizing")
+            mpstate.status.pwm_val = 1500
+
+    # Coptor isn't high enough
+
+    elif average < 880:
+        if mpstate.status.pwm_val is not 1580:
+            print("Throttling up")
+            mpstate.status.pwm_val = 1570
+
+
+    # Coptor is higher than we want     
+    elif average > 920:
+        if mpstate.status.pwm_val is not 1300:
+            print("Throttling down")
+            mpstate.status.pwm_val = 1300
+
+    cmd_rc([3, mpstate.status.pwm_val])
+
 
 def clear_zipimport_cache():
     """Clear out cached entries from _zip_directory_cache.
@@ -820,32 +849,6 @@ def open_socket():
         mpstate.status.socket_open = False
     socket.timeout(0.1)
     time.sleep(0.2)
-
-def cmd_ap(args):
-    self.auto = True
-    average = sum(mpstate.status.depth_stream)/5
-
-    """ Set PWM autopilot PID """
-    if average <= 920 and average >= 880:
-        if mpstate.status.pwm_val is not 1500:
-            print("Stabilizing")
-            mpstate.status.pwm_val = 1500
-
-    # Coptor isn't high enough
-
-    elif average < 880:
-        if mpstate.status.pwm_val is not 1580:
-            print("Throttling up")
-            mpstate.status.pwm_val = 1570
-
-
-    # Coptor is higher than we want     
-    elif average > 920:
-        if mpstate.status.pwm_val is not 1300:
-            print("Throttling down")
-            mpstate.status.pwm_val = 1300
-
-    cmd_rc([3, self.pwm_val])
 
 def get_vision_data():
     
