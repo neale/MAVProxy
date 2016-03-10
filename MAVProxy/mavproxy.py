@@ -80,6 +80,7 @@ class MPStatus(object):
         self.override_counter = 0
         self.sitl_output = False
         self.disarm_flag = False
+        self.auto_t_started = False
         if  self.sitl_output:
              self.override_period = mavutil.periodic_event(20)
         else:
@@ -551,12 +552,15 @@ def cmd_pvision(args):
 
 def cmd_ap(args):
     mpstate.status.auto = True
-    mpstate.status.auto_t.start()
-
+    try:
+        mpstate.status.auto_t.start()
+    except:
+        cmd_disarm('force')
 
 def autopilot_t():
-    
+    mpstate.status.auto_t_started = True
     while 1:
+        
         if mpstate.status.disarm_flag is True:
             cmd_disarm('force')
             break
@@ -584,6 +588,7 @@ def autopilot_t():
                 print("Throttling down", average)
                 mpstate.status.pwm_val = 1350
                 cmd_rc([3, mpstate.status.pwm_val])
+        
 
 
 def clear_zipimport_cache():
@@ -820,6 +825,9 @@ def send_heartbeat(master):
 
 def periodic_tasks():
     '''run periodic checks'''
+    if not mpstate.status.auto_t.isAlive() and mpstate.status.auto_t_started:
+            print("autopilot thread died")
+            mpstate.status.auto_t_started = False
     if mpstate.status.setup_mode:
         return
 
