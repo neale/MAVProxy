@@ -773,6 +773,7 @@ def process_mavlink(slave):
     mpstate.status.counters['Slave'] += 1
 
 
+
 def mkdir_p(dir):
     '''like mkdir -p'''
     if not dir:
@@ -828,6 +829,7 @@ def periodic_tasks():
     if not mpstate.status.auto_t.isAlive() and mpstate.status.auto_t_started:
             print("autopilot thread died")
             mpstate.status.auto_t_started = False
+    print(mpstate.status.current_depth)
     if mpstate.status.setup_mode:
         return
 
