@@ -505,13 +505,13 @@ def cmd_arm(args):
             return
 
         if args[0] == "safetyon":
-            mpstate.master().mav.set_mode_send(self.target_system,
+            mpstate.master().mav.set_mode_send(mpstate.settings.target_system,
                                           mavutil.mavlink.MAV_MODE_FLAG_DECODE_POSITION_SAFETY,
                                           1)
             return
 
         if args[0] == "safetyoff":
-            mpstate.master().mav.set_mode_send(self.target_system,
+            mpstate.master().mav.set_mode_send(mpstate.settings.target_system,
                                           mavutil.mavlink.MAV_MODE_FLAG_DECODE_POSITION_SAFETY,
                                           0)
             return
@@ -525,7 +525,7 @@ def cmd_disarm(args):
     if len(args) == 1 and args[0] == 'force':
         p2 = 21196
     mpstate.master().mav.command_long_send(
-        mpstate.status.target_system,  # target_system
+        mpstate.settings.target_system,  # target_system
         0,
         mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, # command
         0, # confirmation
