@@ -79,6 +79,7 @@ class MPStatus(object):
         self.last_override = [ 0 ] * 16
         self.override_counter = 0
         self.sitl_output = False
+        self.disarm_flag = False
         if  self.sitl_output:
              self.override_period = mavutil.periodic_event(20)
         else:
@@ -433,6 +434,109 @@ def cmd_rc(args):
         channels[channel - 1] = value
     set_override(channels)
 
+def cmd_arm(args):
+        arming_masks = {
+            "all"     : 0x0001,
+            "baro"    : 0x0002,
+            "compass" : 0x0004,
+            "gps"     : 0x0008,
+            "ins"     : 0x0010,
+            "params"  : 0x0020,
+            "rc"      : 0x0040,
+            "voltage" : 0x0080,
+            "battery" : 0x0100
+        }
+
+        '''arm commands'''
+        usage = "usage: arm <check|uncheck|list|throttle|safetyon|safetyoff>"
+        checkables = "<all|baro|compass|gps|ins|params|rc|voltage|battery>"
+
+        if len(args) <= 0:
+            print(usage)
+            return
+
+        if args[0] == "check":
+            if (len(args) < 2):
+                print("usage: arm check", checkables)
+                return
+
+            arming_mask = int(self.get_mav_param("ARMING_CHECK",0))
+            name = args[1].lower()
+            if name == 'all':
+                for name in arming_masks.keys():
+                    arming_mask |= arming_masks[name]
+            elif name in arming_masks:
+                arming_mask |= arming_masks[name]
+            else:
+                print("unrecognized arm check:", name)
+                return
+            self.param_set("ARMING_CHECK", arming_mask)
+            return
+
+        if args[0] == "uncheck":
+            if (len(args) < 2):
+                print("usage: arm uncheck", checkables)
+                return
+
+            arming_mask = int(self.get_mav_param("ARMING_CHECK",0))
+            name = args[1].lower()
+            if name == 'all':
+                arming_mask = 0
+            elif name in arming_masks:
+                arming_mask &= ~arming_masks[name]
+            else:
+                print("unrecognized arm check:", args[1])
+                return
+
+            self.param_set("ARMING_CHECK", arming_mask)
+            return
+
+        if args[0] == "list":
+            arming_mask = int(self.get_mav_param("ARMING_CHECK",0))
+            if arming_mask == 0:
+                print("NONE")
+            for name in arming_masks.keys():
+                if arming_masks[name] & arming_mask:
+                    print(name)
+            return
+
+        if args[0] == "throttle":
+            mpstate.master().arducopter_arm()
+            return
+
+        if args[0] == "safetyon":
+            mpstate.master().mav.set_mode_send(self.target_system,
+                                          mavutil.mavlink.MAV_MODE_FLAG_DECODE_POSITION_SAFETY,
+                                          1)
+            return
+
+        if args[0] == "safetyoff":
+            mpstate.master().mav.set_mode_send(self.target_system,
+                                          mavutil.mavlink.MAV_MODE_FLAG_DECODE_POSITION_SAFETY,
+                                          0)
+            return
+
+        print(usage)
+
+def cmd_disarm(args):
+    '''disarm motors'''
+    mpstate.status.disarm_flag = True
+    p2 = 0
+    if len(args) == 1 and args[0] == 'force':
+        p2 = 21196
+    mpstate.master().mav.command_long_send(
+        mpstate.status.target_system,  # target_system
+        0,
+        mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, # command
+        0, # confirmation
+        0, # param1 (0 to indicate disarm)
+        p2, # param2 (all other params meaningless)
+        0, # param3
+        0, # param4
+        0, # param5
+        0, # param6
+        0) # param7
+
 def cmd_pvision(args):
 
     try:
@@ -452,29 +556,33 @@ def cmd_ap(args):
 
 def autopilot_t():
     
-    average = sum(mpstate.status.depth_stream)/5
+    while 1:
+        if mpstate.status.disarm_flag is True:
+            cmd_disarm([])
 
-    """ Set PWM autopilot PID """
-    if average <= 920 and average >= 880:
-        if mpstate.status.pwm_val is not 1500:
-            print("Stabilizing")
-            mpstate.status.pwm_val = 1500
+        average = sum(mpstate.status.depth_stream)/5
 
-    # Coptor isn't high enough
+        """ Set PWM autopilot PID """
+        if average <= 920 and average >= 880:
+            if mpstate.status.pwm_val is not 1500:
+                print("Stabilizing")
+                mpstate.status.pwm_val = 1500
 
-    elif average < 880:
-        if mpstate.status.pwm_val is not 1580:
-            print("Throttling up")
-            mpstate.status.pwm_val = 1570
+        # Coptor isn't high enough
+
+        elif average < 880:
+            if mpstate.status.pwm_val is not 1580:
+                print("Throttling up")
+                mpstate.status.pwm_val = 1570
 
 
-    # Coptor is higher than we want     
-    elif average > 920:
-        if mpstate.status.pwm_val is not 1300:
-            print("Throttling down")
-            mpstate.status.pwm_val = 1300
+        # Coptor is higher than we want     
+        elif average > 920:
+            if mpstate.status.pwm_val is not 1300:
+                print("Throttling down")
+                mpstate.status.pwm_val = 1300
 
-    cmd_rc([3, mpstate.status.pwm_val])
+        cmd_rc([3, mpstate.status.pwm_val])
 
 
 def clear_zipimport_cache():
@@ -972,7 +1080,7 @@ if __name__ == '__main__':
     parser.add_option("--profile", action='store_true', help="run the Yappi python profiler")
     parser.add_option("--state-basedir", default=None, help="base directory for logs and aircraft directories")
     parser.add_option("--version", action='store_true', help="version information")
-    parser.add_option("--default-modules", default="signing,wp,rally,fence,param,relay,tuneopt,arm,mode,calibration,auxopt,misc,cmdlong,battery,terrain,output", help='default module list')
+    parser.add_option("--default-modules", default="signing,wp,rally,fence,param,relay,tuneopt,mode,calibration,auxopt,misc,cmdlong,battery,terrain,output", help='default module list')
 
     (opts, args) = parser.parse_args()
 
