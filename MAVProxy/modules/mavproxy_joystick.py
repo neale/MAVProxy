@@ -51,7 +51,7 @@ joymap = {
     [(2, 500,  1500),
      (1, -500,  1500),
      (3, -500, 1000),
-     (0, -500,  1500)],
+     (0, -500,  1500)], 
 
     'Microsoft X-Box 360 pad':
     # This is for a USB cabled X-Box 360 controller

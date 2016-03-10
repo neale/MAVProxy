@@ -96,6 +96,7 @@
     <Compile Include="MAVProxy\modules\lib\__init__.py" />
     <Compile Include="MAVProxy\modules\mavproxy_antenna.py" />
     <Compile Include="MAVProxy\modules\mavproxy_arm.py" />
+    <Compile Include="MAVProxy\modules\mavproxy_autopilot.py" />
     <Compile Include="MAVProxy\modules\mavproxy_auxopt.py" />
     <Compile Include="MAVProxy\modules\mavproxy_battery.py" />
     <Compile Include="MAVProxy\modules\mavproxy_calibration.py" />

@@ -49,7 +49,7 @@ class MPStatus(object):
         self.last_altitude_announce = 0.0
         self.last_distance_announce = 0.0
         self.exit = False
-        self.flightmode = 'ALT_HOLD'
+        self.flightmode = 'MAV'
         self.last_mode_announce = 0
         self.logdir = None
         self.last_heartbeat = 0
@@ -73,6 +73,7 @@ class MPStatus(object):
         self.sock_failure_data = False
         self.socket_open = False
         self.pwm_val = 1500
+        self.auto = False
         # integrate rc module
         self.override = [ 0 ] * 16
         self.last_override = [ 0 ] * 16
@@ -258,6 +259,7 @@ def cmd_status(args):
 
 def cmd_setup(args):
     mpstate.status.setup_mode = True
+    print("In setup mode")
     mpstate.rl.set_prompt("")
 
 
@@ -443,9 +445,13 @@ def cmd_pvision(args):
     except:
         print("data not availible\n")
 
-
 def cmd_ap(args):
+    mpstate.status.auto = True
+    mpstate.status.auto_t.start()
 
+
+def autopilot_t():
+    
     average = sum(mpstate.status.depth_stream)/5
 
     """ Set PWM autopilot PID """
@@ -1132,8 +1138,10 @@ if __name__ == '__main__':
     # run main loop as a thread
     mpstate.status.thread = threading.Thread(target=main_loop)
     mpstate.status.socket = threading.Thread(target=get_vision_data, name='get_vision_data')
+    mpstate.status.auto_t  = threading.Thread(target=autopilot_t, name='autopilot_t')
+    mpstate.status.auto_t.daemon = True
     mpstate.status.thread.daemon = True
-    mpstate.status.thread.daemon = True
+    mpstate.status.socket.daemon = True
     mpstate.status.thread.start()
     mpstate.status.socket.start()
     # use main program for input. This ensures the terminal cleans
