@@ -990,6 +990,7 @@ def get_vision_data():
         try:
             data_string = sock_stream.split(',')
             mpstate.status.current_depth  = int(data_string[0])
+            print(mpstate.status.current_depth)
             mpstate.status.xcenter        = int(data_string[1])
             mpstate.status.ycenter        = int(''.join([i for i in data_string[2] if str.isdigit(i)]))
             mpstate.status.depth_stream.appendleft(mpstate.status.current_depth)
@@ -1258,7 +1259,7 @@ if __name__ == '__main__':
     mpstate.status.thread = threading.Thread(target=main_loop)
     mpstate.status.socket = threading.Thread(target=get_vision_data, name='get_vision_data')
     mpstate.status.auto_t  = threading.Thread(target=autopilot_t, name='autopilot_t')
-    mpstate.status.auto_t.daemon = True
+    mpstate.status.auto_t.daemon = False
     mpstate.status.thread.daemon = True
     mpstate.status.socket.daemon = True
     mpstate.status.thread.start()
