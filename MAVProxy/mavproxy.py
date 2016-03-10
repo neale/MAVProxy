@@ -1261,7 +1261,7 @@ if __name__ == '__main__':
     mpstate.status.auto_t  = threading.Thread(target=autopilot_t, name='autopilot_t')
     mpstate.status.auto_t.daemon = False
     mpstate.status.thread.daemon = True
-    mpstate.status.socket.daemon = True
+    #mpstate.status.socket.daemon = True
     mpstate.status.thread.start()
     mpstate.status.socket.start()
     # use main program for input. This ensures the terminal cleans
