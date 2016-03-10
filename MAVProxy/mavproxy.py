@@ -72,7 +72,7 @@ class MPStatus(object):
         self.depth_stream = collections.deque([0]*5, 5)
         self.sock_failure_data = False
         self.socket_open = False
-        self.pwm_val = 1500
+        self.pwm_val = 0
         self.auto = False
         # integrate rc module
         self.override = [ 0 ] * 16
