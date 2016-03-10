@@ -627,7 +627,9 @@ command_map = {
     'alias'     : (cmd_alias,    'command aliases'),
     'rc'        : (cmd_rc,       'give rc channel commands'),
     'pvision'   : (cmd_pvision,  'prints out user data related to vision system'),
-    'autopilot' : (cmd_ap,       'start the autopilot') # altitude only for now
+    'autopilot' : (cmd_ap,       'start the autopilot'), # altitude only for now
+    'arm'       : (cmd_arm,      'arm coptor in various modes'),
+    'disarm'    : (cmd_disarm,   'disarm coptor')
     }
 
 def process_stdin(line):
