@@ -559,30 +559,32 @@ def autopilot_t():
     while 1:
         if mpstate.status.disarm_flag is True:
             cmd_disarm([])
+            break
 
         average = sum(mpstate.status.depth_stream)/5
-
+        changed_mode = False
         """ Set PWM autopilot PID """
         if average <= 920 and average >= 880:
             if mpstate.status.pwm_val is not 1500:
                 print("Stabilizing")
                 mpstate.status.pwm_val = 1500
+                cmd_rc([3, mpstate.status.pwm_val])
 
         # Coptor isn't high enough
 
         elif average < 880:
-            if mpstate.status.pwm_val is not 1580:
+            if mpstate.status.pwm_val is not 1600:
                 print("Throttling up")
-                mpstate.status.pwm_val = 1570
+                mpstate.status.pwm_val = 1600
+                cmd_rc([3, mpstate.status.pwm_val])
 
 
         # Coptor is higher than we want     
         elif average > 920:
-            if mpstate.status.pwm_val is not 1300:
+            if mpstate.status.pwm_val is not 1350:
                 print("Throttling down")
-                mpstate.status.pwm_val = 1300
-
-        cmd_rc([3, mpstate.status.pwm_val])
+                mpstate.status.pwm_val = 1350
+                cmd_rc([3, mpstate.status.pwm_val])
 
 
 def clear_zipimport_cache():
