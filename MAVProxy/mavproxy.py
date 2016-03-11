@@ -86,6 +86,8 @@ class MPStatus(object):
         else:
              self.override_period = mavutil.periodic_event(1)
 
+    
+
     def show(self, f, pattern=None):
         '''write status to status.txt'''
         if pattern is None:
@@ -991,8 +993,8 @@ def get_vision_data():
  
         try:
             data_string = sock_stream.split(',')
+            print("ds", data_string)
             mpstate.status.current_depth  = int(data_string[0])
-            print(mpstate.status.current_depth)
             mpstate.status.xcenter        = int(data_string[1])
             mpstate.status.ycenter        = int(''.join([i for i in data_string[2] if str.isdigit(i)]))
             mpstate.status.depth_stream.appendleft(mpstate.status.current_depth)
@@ -1008,6 +1010,7 @@ def get_vision_data():
 def input_loop():
     '''wait for user input'''
     while mpstate.status.exit != True:
+        print(mpstate.status.current_depth)
         try:
             if mpstate.status.exit != True:
                 line = raw_input(mpstate.rl.prompt)
@@ -1263,7 +1266,7 @@ if __name__ == '__main__':
     mpstate.status.auto_t  = threading.Thread(target=autopilot_t, name='autopilot_t')
     mpstate.status.auto_t.daemon = False
     mpstate.status.thread.daemon = True
-    #mpstate.status.socket.daemon = True
+    mpstate.status.socket.daemon = True
     mpstate.status.thread.start()
     mpstate.status.socket.start()
     # use main program for input. This ensures the terminal cleans
