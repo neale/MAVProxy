@@ -992,14 +992,13 @@ def get_vision_data():
  
         try:
             data_string = sock_stream.split(',')
-            print("ds", data_string)
             mpstate.status.current_depth  = int(data_string[0])
             mpstate.status.xcenter        = int(data_string[1])
             mpstate.status.ycenter        = int(''.join([i for i in data_string[2] if str.isdigit(i)]))
             mpstate.status.depth_stream.appendleft(mpstate.status.current_depth)
             mpstate.status.sock_failure_data = False
 
-        except:
+        except: 
             if not mpstate.status.sock_failure_data:
                 print("could not convert network data\n")
                 if sock_stream:
