@@ -580,7 +580,7 @@ def autopilot_t():
         elif average < 850:
             if mpstate.status.pwm_val is not 1600:
                 print("Throttling up", average)
-                mpstate.status.pwm_val = 1600
+                mpstate.status.pwm_val = 2000
                 cmd_rc([3, mpstate.status.pwm_val])
 
 

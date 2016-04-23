@@ -2,6 +2,8 @@ set moddebug 2
 module load graph
 module load console
 module load help
+module load autopilot
+module load ref
 @graph timespan 30
 @alias add minscore remote camera set minscore
 @alias add minscore2 remote camera set minscore2
