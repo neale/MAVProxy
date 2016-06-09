@@ -69,6 +69,8 @@ class MPStatus(object):
         self.current_depth = 0
         self.xcenter = 0   
         self.ycenter = 0   
+        self.circle_depth = 0
+        self.isCircle = 0;
         self.depth_stream = collections.deque([0]*5, 5)
         self.sock_failure_data = False
         self.socket_open = False
@@ -543,11 +545,13 @@ def cmd_disarm(args):
 def cmd_pvision(args):
 
     try:
-        print ("current depth to object : {}\nCurrent relative center point : ({},{})\nSocket open : {}\n".format(
+        print ("current depth to object : {}\nCurrent relative center point : ({},{})\n Circle depth {}\nCircle in frame: {}\nSocket open : {}\n".format(
             mpstate.status.current_depth,
             mpstate.status.xcenter, 
             mpstate.status.ycenter,   
-            mpstate.status.socket_open
+            mpstate.status.socket_open,
+            mpstate.circle_depth, 
+            mpstate.isCircle
             ))
     except:
         print("data not availible\n")
@@ -568,28 +572,29 @@ def autopilot_t():
             break
 
         average = sum(mpstate.status.depth_stream)/5
-        """ Set PWM autopilot PID """
-        if average <= 950 and average >= 850:
-            if mpstate.status.pwm_val is not 1500:
-                print("Stabilizing", average)
-                mpstate.status.pwm_val = 1500
-                cmd_rc([3, mpstate.status.pwm_val])
+        if isCircle :
+            """ Set PWM autopilot PID """
+            if circle_depth <= 600 and circle_depth >= 500:
+                if mpstate.status.pwm_val is not 1500:
+                    print("Stabilizing", circle_depth)
+                    mpstate.status.pwm_val = 1500
+                    cmd_rc([3, mpstate.status.pwm_val])
 
-        # Coptor isn't high enough
+            # Coptor isn't high enough
 
-        elif average < 850:
-            if mpstate.status.pwm_val is not 1600:
-                print("Throttling up", average)
-                mpstate.status.pwm_val = 2000
-                cmd_rc([3, mpstate.status.pwm_val])
+            elif circle_depth < 500:
+                if mpstate.status.pwm_val is not 1550:
+                    print("Throttling up", circle_depth)
+                    mpstate.status.pwm_val = 1550
+                    cmd_rc([3, mpstate.status.pwm_val])
 
 
-        # Coptor is higher than we want     
-        elif average > 950:
-            if mpstate.status.pwm_val is not 1350:
-                print("Throttling down", average)
-                mpstate.status.pwm_val = 1350
-                cmd_rc([3, mpstate.status.pwm_val])
+            # Coptor is higher than we want     
+            elif circle_depth > 600:
+                if mpstate.status.pwm_val is not 1400:
+                    print("Throttling down", average)
+                    mpstate.status.pwm_val = 1400
+                    cmd_rc([3, mpstate.status.pwm_val])
         
 
 
@@ -995,6 +1000,8 @@ def get_vision_data():
             mpstate.status.current_depth  = int(data_string[0])
             mpstate.status.xcenter        = int(data_string[1])
             mpstate.status.ycenter        = int(''.join([i for i in data_string[2] if str.isdigit(i)]))
+            mpstate.status.circle_depth   = int(data_string[3])
+            mpstate.status.isCircle       = int(data_string[4])
             mpstate.status.depth_stream.appendleft(mpstate.status.current_depth)
             mpstate.status.sock_failure_data = False
 
