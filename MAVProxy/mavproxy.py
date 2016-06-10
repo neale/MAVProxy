@@ -894,6 +894,7 @@ def main_loop():
             return
         while not mpstate.input_queue.empty():
             line = mpstate.input_queue.get()
+            print line
             mpstate.input_count += 1
             cmds = line.split(';')
             if len(cmds) == 1 and cmds[0] == "":
