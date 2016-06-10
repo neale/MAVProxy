@@ -890,6 +890,7 @@ def main_loop():
         set_stream_rates()
 
     while True:
+        print "HALLO"
         if mpstate is None or mpstate.status.exit:
             return
         while not mpstate.input_queue.empty():
