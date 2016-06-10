@@ -1005,6 +1005,7 @@ def get_vision_data():
             mpstate.status.isCircle       = int(data_string[4][0])
             mpstate.status.depth_stream.appendleft(mpstate.status.circle_depth)
             mpstate.status.sock_failure_data = False
+            print mpstate.status.circle_depth
 
         except: 
             if not mpstate.status.sock_failure_data:
