@@ -1274,8 +1274,8 @@ if __name__ == '__main__':
     print "nope"
     mpstate.status.socket = threading.Thread(target=get_vision_data, name='get_vision_data')
     mpstate.status.auto_t  = threading.Thread(target=autopilot_t, name='autopilot_t')
-    mpstate.status.auto_t.daemon = False
-    mpstate.status.thread.daemon = True
+    mpstate.status.auto_t.daemon = True
+    mpstate.status.thread.daemon = False
     mpstate.status.socket.daemon = True
     mpstate.status.thread.start()
     mpstate.status.socket.start()
