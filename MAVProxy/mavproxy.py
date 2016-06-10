@@ -70,7 +70,7 @@ class MPStatus(object):
         self.xcenter = 0   
         self.ycenter = 0   
         self.circle_depth = 0
-        self.isCircle = 0;
+        self.isCircle = 0
         self.depth_stream = collections.deque([0]*5, 5)
         self.sock_failure_data = False
         self.socket_open = False
@@ -550,11 +550,11 @@ def cmd_pvision(args):
             mpstate.status.xcenter, 
             mpstate.status.ycenter,   
             mpstate.status.socket_open,
-            mpstate.circle_depth, 
-            mpstate.isCircle
+            mpstate.status.circle_depth, 
+            mpstate.status.isCircle
             ))
     except:
-        print("data not availiblen")
+        print("data not availible")
 
 def cmd_ap(args):
     mpstate.status.auto = True
