@@ -582,7 +582,7 @@ def autopilot_t():
 
         # Coptor isn't high enough
 
-        elif circle_depth < 500:
+        elif circle_depth < 500 and circle_depth > 10:
             if mpstate.status.pwm_val is not 1550:
                 print("Throttling up", circle_depth)
                 mpstate.status.pwm_val = 1550
@@ -590,7 +590,7 @@ def autopilot_t():
 
 
         # Coptor is higher than we want     
-        elif circle_depth > 600:
+        elif circle_depth > 600 and circle_depth < 1000:
             if mpstate.status.pwm_val is not 1400:
                 print("Throttling down", average)
                 mpstate.status.pwm_val = 1400
