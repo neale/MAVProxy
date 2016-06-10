@@ -995,21 +995,21 @@ def get_vision_data():
                 print("Socket data could not be resolved, vision system offline\n")
             mpstate.status.sock_failure_data = True
  
-        try:
-            data_string = sock_stream.split(',')
-            mpstate.status.current_depth  = int(data_string[0][1:])
-            mpstate.status.xcenter        = int(data_string[1])
-            mpstate.status.ycenter        = int(data_string[2])
-            mpstate.status.circle_depth   = int(data_string[3])
-            mpstate.status.isCircle       = int(data_string[4][:-1])
-            mpstate.status.depth_stream.appendleft(mpstate.status.circle_depth)
-            mpstate.status.sock_failure_data = False
+       # try:
+        data_string = sock_stream.split(',')
+        mpstate.status.current_depth  = int(data_string[0])
+        mpstate.status.xcenter        = int(data_string[1])
+        mpstate.status.ycenter        = int(data_string[2])
+        mpstate.status.circle_depth   = int(data_string[3])
+        mpstate.status.isCircle       = int(data_string[4])
+        mpstate.status.depth_stream.appendleft(mpstate.status.circle_depth)
+        mpstate.status.sock_failure_data = False
 
-        except: 
+        """except: 
             if not mpstate.status.sock_failure_data:
                 print("could not convert network data\n")
                 if sock_stream:
-                    print("data printback: {}\n".format(sock_stream))
+                    print("data printback: {}\n".format(sock_stream))"""
 
 
 def input_loop():
