@@ -1003,7 +1003,7 @@ def get_vision_data():
         mpstate.status.xcenter        = int(data_string[1])
         mpstate.status.ycenter        = int(data_string[2])
         mpstate.status.circle_depth   = int(data_string[3])
-        mpstate.status.isCircle       = int(''.join([i if ord(i) < 128 else ' ' for i in data_string[4]]))
+        mpstate.status.isCircle       = int(data_string[4][0])
         mpstate.status.depth_stream.appendleft(mpstate.status.circle_depth)
         mpstate.status.sock_failure_data = False
 
