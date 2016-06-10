@@ -565,7 +565,7 @@ def cmd_ap(args):
 
 def autopilot_t():
     mpstate.status.auto_t_started = True
-    while 1:
+    while mpstate.status.isCircle:
         
         if mpstate.status.disarm_flag is True:
             cmd_disarm('force')
@@ -573,30 +573,28 @@ def autopilot_t():
 
         average = sum(mpstate.status.depth_stream)/5
         circle_depth = mpstate.status.circle_depth
-        isCircle = mpstate.status.isCircle
-        if mpstate.status.isCircle :
-            """ Set PWM autopilot PID """
-            if circle_depth <= 600 and circle_depth >= 500:
-                if mpstate.status.pwm_val is not 1500:
-                    print("Stabilizing", circle_depth)
-                    mpstate.status.pwm_val = 1500
-                    cmd_rc([3, mpstate.status.pwm_val])
+        """ Set PWM autopilot PID """
+        if circle_depth <= 600 and circle_depth >= 500:
+            if mpstate.status.pwm_val is not 1500:
+                print("Stabilizing", circle_depth)
+                mpstate.status.pwm_val = 1500
+                cmd_rc([3, mpstate.status.pwm_val])
 
-            # Coptor isn't high enough
+        # Coptor isn't high enough
 
-            elif circle_depth < 500:
-                if mpstate.status.pwm_val is not 1550:
-                    print("Throttling up", circle_depth)
-                    mpstate.status.pwm_val = 1550
-                    cmd_rc([3, mpstate.status.pwm_val])
+        elif circle_depth < 500:
+            if mpstate.status.pwm_val is not 1550:
+                print("Throttling up", circle_depth)
+                mpstate.status.pwm_val = 1550
+                cmd_rc([3, mpstate.status.pwm_val])
 
 
-            # Coptor is higher than we want     
-            elif circle_depth > 600:
-                if mpstate.status.pwm_val is not 1400:
-                    print("Throttling down", average)
-                    mpstate.status.pwm_val = 1400
-                    cmd_rc([3, mpstate.status.pwm_val])
+        # Coptor is higher than we want     
+        elif circle_depth > 600:
+            if mpstate.status.pwm_val is not 1400:
+                print("Throttling down", average)
+                mpstate.status.pwm_val = 1400
+                cmd_rc([3, mpstate.status.pwm_val])
         
 
 
