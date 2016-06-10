@@ -989,7 +989,7 @@ def get_vision_data():
         if not mpstate.status.socket_open:
             open_socket()
         try:
-            sock_stream = mpstate.status.sock.recv(26)
+            sock_stream = mpstate.status.sock.recv(21)
         except:
             if not mpstate.status.sock_failure_data:
                 print("Socket data could not be resolved, vision system offline\n")
