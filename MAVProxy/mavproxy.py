@@ -662,7 +662,7 @@ def process_stdin(line):
         if line == '.':
             mpstate.status.setup_mode = False
             mpstate.status.flightmode = "ALT_HOLD"
-            mpstate.rl.set_prompt("MAV>th ")
+            mpstate.rl.set_prompt("MAV> ")
             return
         if line != '+++':
             line += '\r'
@@ -1024,6 +1024,7 @@ def input_loop():
         except EOFError:
             mpstate.status.exit = True
             sys.exit(1)
+        print line
         mpstate.input_queue.put(line)
 
 
