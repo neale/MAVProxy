@@ -996,6 +996,7 @@ def get_vision_data():
             mpstate.status.sock_failure_data = True
  
        # try:
+        print data_string, len(data_string), '\n'
         data_string = sock_stream.split(',')
         mpstate.status.current_depth  = int(data_string[0])
         mpstate.status.xcenter        = int(data_string[1])
