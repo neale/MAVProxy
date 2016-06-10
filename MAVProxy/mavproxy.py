@@ -995,7 +995,8 @@ def get_vision_data():
                 print("Socket data could not be resolved, vision system offline\n")
             mpstate.status.sock_failure_data = True
  
-        #try:
+       # try:
+        data_string = sock_stream.split(',')
         print data_string, len(data_string), '\n'
 
         mpstate.status.current_depth  = int(data_string[0])
