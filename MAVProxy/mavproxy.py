@@ -1271,7 +1271,7 @@ if __name__ == '__main__':
     #process_stdin("mode ALT_HOLD")
     # run main loop as a thread
     print "here"
-    mpstate.status.thread = threading.Thread(target=main_loop)
+    mpstate.status.thread = threading.Thread(target='main_loop')
     print "nope"
     mpstate.status.socket = threading.Thread(target=get_vision_data, name='get_vision_data')
     mpstate.status.auto_t  = threading.Thread(target=autopilot_t, name='autopilot_t')
