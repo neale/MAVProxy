@@ -989,7 +989,7 @@ def get_vision_data():
         if not mpstate.status.socket_open:
             open_socket()
         try:
-            sock_stream = mpstate.status.sock.recv(14)
+            sock_stream = mpstate.status.sock.recv(26)
         except:
             if not mpstate.status.sock_failure_data:
                 print("Socket data could not be resolved, vision system offline\n")
@@ -997,11 +997,11 @@ def get_vision_data():
  
         try:
             data_string = sock_stream.split(',')
-            mpstate.status.current_depth  = int(data_string[0])
+            mpstate.status.current_depth  = int(data_string[0][1:])
             mpstate.status.xcenter        = int(data_string[1])
             mpstate.status.ycenter        = int(data_string[2])
             mpstate.status.circle_depth   = int(data_string[3])
-            mpstate.status.isCircle       = int(data_string[4])
+            mpstate.status.isCircle       = int(data_string[4][:-1])
             mpstate.status.depth_stream.appendleft(mpstate.status.circle_depth)
             mpstate.status.sock_failure_data = False
 
