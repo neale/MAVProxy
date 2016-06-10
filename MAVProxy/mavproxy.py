@@ -1268,7 +1268,9 @@ if __name__ == '__main__':
     #open_telemetry_logs(logpath_telem, logpath_telem_raw)
     #process_stdin("mode ALT_HOLD")
     # run main loop as a thread
+    print "here"
     mpstate.status.thread = threading.Thread(target=main_loop)
+    print "nope"
     mpstate.status.socket = threading.Thread(target=get_vision_data, name='get_vision_data')
     mpstate.status.auto_t  = threading.Thread(target=autopilot_t, name='autopilot_t')
     mpstate.status.auto_t.daemon = False
@@ -1276,6 +1278,8 @@ if __name__ == '__main__':
     mpstate.status.socket.daemon = True
     mpstate.status.thread.start()
     mpstate.status.socket.start()
+    print "nope"
+
     # use main program for input. This ensures the terminal cleans
     # up on exit
     while (mpstate.status.exit != True):
