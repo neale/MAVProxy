@@ -662,7 +662,7 @@ def process_stdin(line):
         if line == '.':
             mpstate.status.setup_mode = False
             mpstate.status.flightmode = "ALT_HOLD"
-            mpstate.rl.set_prompt("MAV> ")
+            mpstate.rl.set_prompt("MAV>th ")
             return
         if line != '+++':
             line += '\r'
@@ -675,7 +675,6 @@ def process_stdin(line):
         return
 
     args = shlex.split(line)
-    print line
     cmd = args[0]
     while cmd in mpstate.aliases:
         line = mpstate.aliases[cmd]
