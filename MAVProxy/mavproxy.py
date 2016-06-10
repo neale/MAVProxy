@@ -890,12 +890,10 @@ def main_loop():
         set_stream_rates()
 
     while True:
-        print "HALLO"
         if mpstate is None or mpstate.status.exit:
             return
         while not mpstate.input_queue.empty():
             line = mpstate.input_queue.get()
-            print line
             mpstate.input_count += 1
             cmds = line.split(';')
             if len(cmds) == 1 and cmds[0] == "":
@@ -1025,7 +1023,6 @@ def input_loop():
         except EOFError:
             mpstate.status.exit = True
             sys.exit(1)
-        print line
         mpstate.input_queue.put(line)
 
 
