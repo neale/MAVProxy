@@ -572,7 +572,8 @@ def autopilot_t():
             break
 
         average = sum(mpstate.status.depth_stream)/5
-        if isCircle :
+        isCircle = mpstate.status.isCircle
+        if mpstate.status.isCircle :
             """ Set PWM autopilot PID """
             if circle_depth <= 600 and circle_depth >= 500:
                 if mpstate.status.pwm_val is not 1500:
