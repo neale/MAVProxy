@@ -1271,15 +1271,15 @@ if __name__ == '__main__':
     #process_stdin("mode ALT_HOLD")
     # run main loop as a thread
     print "here"
-    mpstate.status.thread = threading.Thread(target='main_loop')
+    mpstate.status.thread = threading.Thread(target=main_loop, name="main_loop")
     print "nope"
-    mpstate.status.socket = threading.Thread(target=get_vision_data, name='get_vision_data')
-    mpstate.status.auto_t  = threading.Thread(target=autopilot_t, name='autopilot_t')
-    mpstate.status.auto_t.daemon = True
-    mpstate.status.thread.daemon = False
-    mpstate.status.socket.daemon = True
+    #mpstate.status.socket = threading.Thread(target=get_vision_data, name='get_vision_data')
+   # mpstate.status.auto_t  = threading.Thread(target=autopilot_t, name='autopilot_t')
+    #mpstate.status.auto_t.daemon = True
+    #mpstate.status.thread.daemon = False
+    #mpstate.status.socket.daemon = True
     mpstate.status.thread.start()
-    mpstate.status.socket.start()
+    #mpstate.status.socket.start()
     print "nope"
 
     # use main program for input. This ensures the terminal cleans
