@@ -997,7 +997,6 @@ def get_vision_data():
  
         try:
             data_string = sock_stream.split(',')
-            print data_string, len(data_string), '\n'
 
             mpstate.status.current_depth  = int(data_string[0])
             mpstate.status.xcenter        = int(data_string[1])
