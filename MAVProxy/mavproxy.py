@@ -554,7 +554,7 @@ def cmd_pvision(args):
             mpstate.isCircle
             ))
     except:
-        print("data not availible\n")
+        print("data not availiblen")
 
 def cmd_ap(args):
     mpstate.status.auto = True
@@ -1265,7 +1265,7 @@ if __name__ == '__main__':
 
     # log all packets from the master, for later replay
     #open_telemetry_logs(logpath_telem, logpath_telem_raw)
-    process_stdin("mode ALT_HOLD")
+    #process_stdin("mode ALT_HOLD")
     # run main loop as a thread
     mpstate.status.thread = threading.Thread(target=main_loop)
     mpstate.status.socket = threading.Thread(target=get_vision_data, name='get_vision_data')
